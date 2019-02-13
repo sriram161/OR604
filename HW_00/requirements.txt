@@ -1,0 +1,5 @@
+certifi==2018.11.29
+haversine==2.0.0
+SQLAlchemy==1.2.16
+vincenty==0.1.4
+wincertstore==0.2
