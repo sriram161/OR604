@@ -29,6 +29,16 @@ casino.update()
 casino.write('casino.lp')
 
 casino.optimize()
-casino.write("filename.mst") 
+casino.update()
+casino.write('casino.mst')
 
-# TODO: Find the optimized values and write them to CSV.
+import csv
+
+with open('optimal_value.csv', mode='w', newline='') as csv_file:
+    writer = csv.DictWriter(csv_file, fieldnames=['floor', 'slot_type', 'machine_count'])
+    writer.writeheader()
+
+    for item, value in machine_count.items():
+        writer.writerow({'floor':item[0], 'slot_type':item[1], 'machine_count':value.X})
+
+# casino.ObjVal give the profit value.
