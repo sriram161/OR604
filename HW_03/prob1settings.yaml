@@ -1,0 +1,61 @@
+floors:
+ floor_1 : 750
+ floor_2 : 1000
+ floor_3 : 550
+ floor_4 : 700
+
+slottype:
+  - NIB
+  - DIR
+  - DOR
+  - GRP
+  - HDD
+  - MOL
+  - BLJ
+
+onhand:
+ NIB: 200 
+ DIR: 150
+ DOR: 100
+ GRP: 250
+ HDD: 125
+ MOL: 100
+ BLJ: 250
+
+area:
+  NIB: 2 
+  DIR: 2.5
+  DOR: 6
+  GRP: 2.75
+  HDD: 3.5
+  MOL: 4
+  BLJ: 2.75
+
+exrevenue:
+  NIB: 2000 
+  DIR: 3500
+  DOR: 4500
+  GRP: 750
+  HDD: 3000
+  MOL: 2500
+  BLJ: 3000
+
+opcost:
+  NIB: 800
+  DIR: 400
+  DOR: 1500
+  GRP: 200
+  HDD: 1000
+  MOL: 500
+  BLJ: 500
+
+maintenance:
+  NIB: 0.67
+  DIR: 1
+  DOR: 2
+  GRP: 1.1
+  HDD: 0.67
+  MOL: 0.5
+  BLJ: 0.75
+
+totalhr: 835
