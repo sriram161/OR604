@@ -2,8 +2,8 @@ from app.db.db_factory import DbFactory
 from app.db.settings import get_base
 from sqlalchemy.orm import sessionmaker
 from app.db.db_factory import DbFactory
-from app.models.location import Location
-from app.models.trip import Trip
+#from app.models.location import Location
+#from app.models.trip import Trip
 
 class DBSession(object):
     '''Context manager to handle database session'''
