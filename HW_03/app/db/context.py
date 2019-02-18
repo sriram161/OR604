@@ -2,8 +2,9 @@ from app.db.db_factory import DbFactory
 from app.db.settings import get_base
 from sqlalchemy.orm import sessionmaker
 from app.db.db_factory import DbFactory
-#from app.models.location import Location
-#from app.models.trip import Trip
+#from app.models.centers import Centers
+#from app.models.goodstores import GoodStores
+#from app.models.shopdemand import ShopDemand
 
 class DBSession(object):
     '''Context manager to handle database session'''
@@ -22,3 +23,6 @@ class DBSession(object):
     def __exit__(self, *args):
         self.session.commit()
         self.session.close()
+
+    def commit(self):
+        self.session.commit()
