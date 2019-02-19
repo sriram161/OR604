@@ -29,4 +29,20 @@ cfg['cost'] = server_obj.get_cost()
 cfg['capacity'] = server_obj.get_capacity()
 cfg['demand'] = server_obj.get_demand()
 good_stores = server_obj.get_good_stores()
-print('Total Shops: ', len(cfg['demand'].keys()), 'Total good Shops: ', len(good_stores), sep='\n')
+
+stores_with_demand = set(cfg['demand'].keys())
+new_stores = set(good_stores) - stores_with_demand
+closed_stores = stores_with_demand - set(good_stores)
+print(f"Total Stores: {len(cfg['demand'].keys())}", f'Total good Stores: {len(good_stores)}', \
+      f'Total new_stores:{len(new_stores)}', f'Total closed_stores: {len(closed_stores)}', sep='\n')
+
+for store in closed_stores:
+    cfg['demand'].pop(store)
+
+print(f"Total Stores after removal of old stores: {len(cfg['demand'])}")
+
+for new_store in new_stores:
+    if new_store not in cfg['demand'].keys():
+       cfg['demand'][new_store] = -1
+
+print(f"Total Stores after adding new_stores: {len(cfg['demand'])}")

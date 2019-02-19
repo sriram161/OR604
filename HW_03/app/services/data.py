@@ -36,4 +36,4 @@ class DataService(object):
 
     def get_good_stores(self) -> list:
         with DBSession(self.systemname, self.dbfile) as session:
-            return list(session.query(GoodStores.STORE_NUMBER))
+            return [obj[0] for obj in session.query(GoodStores.STORE_NUMBER)]
