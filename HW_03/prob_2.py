@@ -20,4 +20,13 @@ good_shops = r"OR604 Good Dominos Data.csv"
 #load_goodstores_table(data_path, good_shops, systemname, dbfile)
 #load_shopdemand_table(data_path, shops, systemname, dbfile)
 
+cfg = dict()
 
+from app.services.data import DataService
+
+server_obj = DataService(systemname, dbfile)
+cfg['cost'] = server_obj.get_cost()
+cfg['capacity'] = server_obj.get_capacity()
+cfg['demand'] = server_obj.get_demand()
+good_stores = server_obj.get_good_stores()
+print('Total Shops: ', len(cfg['demand'].keys()), 'Total good Shops: ', len(good_stores), sep='\n')
