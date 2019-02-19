@@ -28,8 +28,9 @@ server_obj = DataService(systemname, dbfile)
 cfg['cost'] = server_obj.get_cost()
 cfg['capacity'] = server_obj.get_capacity()
 cfg['demand'] = server_obj.get_demand()
-good_stores = server_obj.get_good_stores()
+cfg['distance'] = server_obj.get_distances()
 
+good_stores = server_obj.get_good_stores()
 stores_with_demand = set(cfg['demand'].keys())
 new_stores = set(good_stores) - stores_with_demand
 closed_stores = stores_with_demand - set(good_stores)
@@ -46,3 +47,7 @@ for new_store in new_stores:
        cfg['demand'][new_store] = -1
 
 print(f"Total Stores after adding new_stores: {len(cfg['demand'])}")
+
+total_proxy_demand_needed = sum(1 for _ in filter(lambda val: val == -1 ,cfg['demand'].values()))
+print(f"Total proxy values needed: {total_proxy_demand_needed}")
+
