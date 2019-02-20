@@ -48,7 +48,7 @@ def load_shopdemand_table(data_path, _file, systemname, dbfile):
         next(f_handle)  # Skip headers of csv file.
         reader = csv.DictReader(f_handle, fieldnames=ShopDemand.metadata.tables['shopdemand'].columns.keys())
         row_count = count(1)
-        print(f"started_loaded...! {_file}")
+        print(f"started_loading...! {_file}")
         for item in reader:
             obj = ShopDemand(**item)
             obj.id_ = next(row_count)

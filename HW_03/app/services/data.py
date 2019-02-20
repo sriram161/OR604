@@ -42,6 +42,6 @@ class DataService(object):
             return distance
 
     def add_records(self, objects:list) -> None:
-        with DBsession(self.systemname, self.dbfile) as session:
+        with DBSession(self.systemname, self.dbfile) as session:
              session.add_all(objects)
         
