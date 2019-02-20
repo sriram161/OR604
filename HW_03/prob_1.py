@@ -4,6 +4,7 @@ import gurobipy as grb
 with open("prob1settings.yaml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
+#### GUROBI OPTIMIZATION.
 # Model
 casino = grb.Model()
 casino.modelSense = grb.GRB.MAXIMIZE
@@ -37,6 +38,7 @@ casino.write('casino.sol')
 
 import csv
 
+#### OUTPUT RESULTS FILE.
 with open('casino_optimal_value.csv', mode='w', newline='') as csv_file:
     writer = csv.DictWriter(csv_file, fieldnames=['floor', 'slot_type', 'machine_count'])
     writer.writeheader()

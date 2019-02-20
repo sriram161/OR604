@@ -23,6 +23,7 @@ load_centers_table(data_path, distribution_centers, systemname, dbfile)
 load_goodstores_table(data_path, good_shops, systemname, dbfile)
 load_shopdemand_table(data_path, shops, systemname, dbfile)
 
+#### Data preparation for optimization.
 cfg = dict()
 
 server_obj = DataService(systemname, dbfile)
@@ -46,6 +47,7 @@ for store in closed_stores:
 
 print(f"Total Stores after removal of old stores: {len(cfg['demand'])}")
 
+# Assigning default value for new_stores.
 for new_store in new_stores:
     if new_store not in cfg['demand'].keys():
        cfg['demand'][new_store] = -1
@@ -55,13 +57,12 @@ print(f"Total Stores after adding new_stores: {len(cfg['demand'])}")
 total_proxy_demand_needed = sum(1 for _ in filter(lambda val: val == -1 ,cfg['demand'].values()))
 print(f"Total proxy values needed: {total_proxy_demand_needed}")
 
-
-#Assign average value to new stores
+#Assign average value to new stores.
 avg_across_demand = np.mean([_ for _ in filter(lambda val: val != -1 ,cfg['demand'].values())])
 for new_store in new_stores:
        cfg['demand'][new_store] = avg_across_demand
 
-# GRB model
+#### GUROBI OPTIMIZATION MODEL.
 dominos = grb.Model()
 dominos.modelSense = grb.GRB.MINIMIZE
 centers = cfg['cost'].keys()
@@ -90,6 +91,7 @@ dominos.write('dominos.lp')
 dominos.optimize()
 dominos.update()
 
-optimal_values = [Results(CENTER_ID=item[0], STORE_NUMBER=item[1], DOUGHS_VALUE=value.X)
-                  for item, value in dough_delivery.items()]
+#### OUTPUT RESULTS FILE.
+optimal_values = [Results(ID_=idx ,CENTER_ID=item[0][0].replace(':', ' '), STORE_NUMBER=item[0][1], DOUGHS_VALUE=item[1].X)
+                  for idx, item in enumerate(dough_delivery.items())]
 server_obj.add_records(optimal_values)

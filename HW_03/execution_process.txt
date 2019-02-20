@@ -1,0 +1,14 @@
+Execution procedure for problem-1.
+
+STEP-1: Exeute python prob_1.py using command prompt with in the HW_03 folder. 
+        Output: casino_optimal_value.csv file with the optimal values.
+
+Execution procedure for problem-2.
+
+STEP-1: Extract all the data file to a folder.
+STEP-2: copy the absoulute path of data files folder from STEP-1 and paste it in 
+        prob_3.py file data_path variable.
+STEP-3: Execute python prob_2.py using command prompt with in the HW_03 folder.
+        Output: results table in hw_03.db database.
+
+NOTE: Tables in hw_03.db are results, shopdemand, goodstores and centers.
