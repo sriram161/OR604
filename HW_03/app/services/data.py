@@ -17,17 +17,17 @@ class DataService(object):
     def get_cost(self) -> dict:
         with DBSession(self.systemname, self.dbfile) as session:
              cost = session.query(Centers.CENTER_ID, Centers.DIST_COST)
-             return {obj[0] : obj[1] for obj in cost}
+             return {obj[0].replace(' ','!') : obj[1] for obj in cost}
                  
     def get_capacity(self) -> dict:
         with DBSession(self.systemname, self.dbfile) as session:
             capacity = session.query(Centers.CENTER_ID, Centers.SUPPLY_CAPACITY)
-            return {obj[0]: int(obj[1].replace(',','')) for obj in capacity}
+            return {obj[0].replace(' ', '!'): int(obj[1].replace(',', '')) for obj in capacity}
 
     def get_demand(self) -> dict:
         with DBSession(self.systemname, self.dbfile) as session:
-            demand = session.query(ShopDemand.STORE_NUMBER, func.sum(ShopDemand.PIZZA_SALES)).group_by(ShopDemand.STORE_NUMBER).all()
-            return {obj[0]: obj[1] for obj in demand}
+            demand = session.query(ShopDemand.STORE_NUMBER, func.avg(ShopDemand.PIZZA_SALES)).group_by(ShopDemand.STORE_NUMBER).all()
+            return {obj[0]: obj[1]*7 for obj in demand}
 
     def get_good_stores(self) -> list:
         with DBSession(self.systemname, self.dbfile) as session:
@@ -38,6 +38,6 @@ class DataService(object):
             distance = dict()
             data = session.execute("select a.CENTER_ID, b.STORE_NUMBER, a.LATITUDE, a.LONGITUDE, b.LATITUDE, b.LONGITUDE from centers a cross join goodstores b;")
             for center, store, center_lat, center_lon, store_lat, store_lon in data:
-                 distance[center, store] = haversine_((center_lat, center_lon), (store_lat, store_lon))
+                 distance[center.replace(' ', '!'), store] = haversine_((center_lat, center_lon), (store_lat, store_lon))
             return distance
         

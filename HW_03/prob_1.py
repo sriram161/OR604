@@ -4,14 +4,17 @@ import gurobipy as grb
 with open("prob1settings.yaml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
+# Model
 casino = grb.Model()
 casino.modelSense = grb.GRB.MAXIMIZE
 
+# Decision variables
 machine_count = {}
 for floor in cfg['floors']:
     for machine_type in cfg['slottype']:
         machine_count[floor, machine_type] = casino.addVar(obj=cfg['exrevenue'][machine_type] - cfg['opcost'][machine_type], name=f'x{floor}_{machine_type}')
 
+# Constraints
 my_constr = {}
 for floor in cfg['floors']:
     cname = f'{floor}'
@@ -34,7 +37,7 @@ casino.write('casino.mst')
 
 import csv
 
-with open('optimal_value.csv', mode='w', newline='') as csv_file:
+with open('casino_optimal_value.csv', mode='w', newline='') as csv_file:
     writer = csv.DictWriter(csv_file, fieldnames=['floor', 'slot_type', 'machine_count'])
     writer.writeheader()
 
