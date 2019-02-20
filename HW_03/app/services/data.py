@@ -40,4 +40,8 @@ class DataService(object):
             for center, store, center_lat, center_lon, store_lat, store_lon in data:
                  distance[center.replace(' ', '!'), store] = haversine_((center_lat, center_lon), (store_lat, store_lon))
             return distance
+
+    def add_records(self, objects:list) -> None:
+        with DBsession(self.systemname, self.dbfile) as session:
+             session.add_all(objects)
         

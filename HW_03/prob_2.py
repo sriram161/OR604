@@ -5,6 +5,7 @@ from app.db.onetimes import load_centers_table
 from app.db.onetimes import load_goodstores_table
 from app.db.onetimes import load_shopdemand_table
 from app.services.data import DataService
+from app.models.results import Results
 
 #### Please change path relative to your system.
 data_path = r"C:/Users/notme/Documents/Development/OR604/HW_03/app/data/"
@@ -17,10 +18,10 @@ distribution_centers = r"Distributor_Data.csv"
 good_shops = r"OR604 Good Dominos Data.csv"
 
 #### Please uncomment below and run to create and load tables with data.
-#create_tables(systemname, dbfile)
-#load_centers_table(data_path, distribution_centers, systemname, dbfile)
-#load_goodstores_table(data_path, good_shops, systemname, dbfile)
-#load_shopdemand_table(data_path, shops, systemname, dbfile)
+create_tables(systemname, dbfile)
+load_centers_table(data_path, distribution_centers, systemname, dbfile)
+load_goodstores_table(data_path, good_shops, systemname, dbfile)
+load_shopdemand_table(data_path, shops, systemname, dbfile)
 
 cfg = dict()
 
@@ -89,7 +90,6 @@ dominos.write('dominos.lp')
 dominos.optimize()
 dominos.update()
 
-for item, value in dough_delivery.items():
-      print(item, value, sep='\n')
-
-
+optimal_values = [Results(CENTER_ID=item[0], STORE_NUMBER=item[1], DOUGHS_VALUE=value)
+                  for item, value in dough_delivery.items()]
+server_obj.add_records(optimal_values)

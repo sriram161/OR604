@@ -33,7 +33,7 @@ casino.write('casino.lp')
 
 casino.optimize()
 casino.update()
-casino.write('casino.mst')
+casino.write('casino.sol')
 
 import csv
 

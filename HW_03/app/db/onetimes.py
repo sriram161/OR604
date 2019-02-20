@@ -6,6 +6,7 @@ from app.db.settings import get_base
 from app.models.centers import Centers
 from app.models.goodstores import GoodStores
 from app.models.shopdemand import ShopDemand
+from app.models.results import Results
 from app.db.context import DBSession
 from itertools import count
 
@@ -17,6 +18,7 @@ def create_tables(systemname, dbfile):
     Centers.__table__.create(sqlite_engine, checkfirst=True)
     GoodStores.__table__.create(sqlite_engine, checkfirst=True)
     ShopDemand.__table__.create(sqlite_engine, checkfirst=True)
+    Results.__table__.create(sqlite_engine, checkfirst=True)
     sqlite_engine.dispose()
 
 
@@ -27,7 +29,7 @@ def load_centers_table(data_path, _file, systemname, dbfile):
         reader = csv.DictReader(f_handle, fieldnames=Centers.metadata.tables['centers'].columns.keys())
         for item in reader:
             session.add(Centers(**item))
-        print("File_loaded...! {}".format(_file))
+        print(f"File_loaded...! {_file}")
 
 
 def load_goodstores_table(data_path, _file, systemname, dbfile):
@@ -37,7 +39,7 @@ def load_goodstores_table(data_path, _file, systemname, dbfile):
         reader = csv.DictReader(f_handle, fieldnames=GoodStores.metadata.tables['goodstores'].columns.keys())
         for item in reader:
             session.add(GoodStores(**item))
-        print("File_loaded...! {}".format(_file))
+        print(f"File_loaded...! {_file}")
 
 
 def load_shopdemand_table(data_path, _file, systemname, dbfile):
@@ -46,6 +48,7 @@ def load_shopdemand_table(data_path, _file, systemname, dbfile):
         next(f_handle)  # Skip headers of csv file.
         reader = csv.DictReader(f_handle, fieldnames=ShopDemand.metadata.tables['shopdemand'].columns.keys())
         row_count = count(1)
+        print(f"started_loaded...! {_file}")
         for item in reader:
             obj = ShopDemand(**item)
             obj.id_ = next(row_count)
