@@ -90,6 +90,7 @@ dominos.write('dominos.lp')
 dominos.optimize()
 dominos.update()
 
-optimal_values = [Results(CENTER_ID=item[0], STORE_NUMBER=item[1], DOUGHS_VALUE=value)
+optimal_values = [Results(CENTER_ID=item[0], STORE_NUMBER=item[1], DOUGHS_VALUE=value.X)
                   for item, value in dough_delivery.items()]
+import pdb; pdb.set_trace()
 server_obj.add_records(optimal_values)
