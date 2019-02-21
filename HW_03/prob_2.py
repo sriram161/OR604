@@ -92,6 +92,6 @@ dominos.optimize()
 dominos.update()
 
 #### OUTPUT RESULTS FILE.
-optimal_values = [Results(ID_=idx ,CENTER_ID=item[0][0].replace(':', ' '), STORE_NUMBER=item[0][1], DOUGHS_VALUE=item[1].X)
+optimal_values = [Results(ID_=idx ,CENTER_ID=item[0][0].replace('!', ' '), STORE_NUMBER=item[0][1], DOUGHS_VALUE=item[1].X)
                   for idx, item in enumerate(dough_delivery.items())]
 server_obj.add_records(optimal_values)
