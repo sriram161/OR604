@@ -18,23 +18,24 @@ distribution_centers = r"Distributor_Data.csv"
 mills = r"Ardent_Mills_Data.csv"
 
 #### Please uncomment below and run to create and load tables with data.
-create_tables(systemname, dbfile)
-load_shopdemand_table(data_path, shops, systemname, dbfile)
-load_centers_table(data_path, distribution_centers, systemname, dbfile)
-load_mills_table(data_path, mills, systemname, dbfile)
+#create_tables(systemname, dbfile)
+#load_shopdemand_table(data_path, shops, systemname, dbfile)
+#load_centers_table(data_path, distribution_centers, systemname, dbfile)
+#load_mills_table(data_path, mills, systemname, dbfile)
 
 
-'''
+
 #### Data preparation for optimization.
 cfg = dict()
 
 server_obj = DataService(systemname, dbfile)
 
-cfg['distance'] = server_obj.get_distances()
 cfg['cost'] = server_obj.get_cost()
 cfg['demand'] = server_obj.get_demand()
+cfg['distance'] = server_obj.get_distances()
 cfg['capacity'] = server_obj.get_capacity()
 
+'''
 good_stores = server_obj.get_good_stores()
 stores_with_demand = set(cfg['demand'].keys())
 new_stores = set(good_stores) - stores_with_demand
