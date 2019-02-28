@@ -23,60 +23,35 @@ mills = r"Ardent_Mills_Data.csv"
 #load_centers_table(data_path, distribution_centers, systemname, dbfile)
 #load_mills_table(data_path, mills, systemname, dbfile)
 
-
-
 #### Data preparation for optimization.
 cfg = dict()
 
 server_obj = DataService(systemname, dbfile)
 
-cfg['cost'] = server_obj.get_cost()
-cfg['demand'] = server_obj.get_demand()
+cfg['mill_trasport_cost'] = server_obj.get_mill_transport_cost()  # Cost of trasport from mill to center.
+cfg['center_demand'] = server_obj.get_center_capacity()
 cfg['distance'] = server_obj.get_distances()
-cfg['capacity'] = server_obj.get_capacity()
-
-'''
-good_stores = server_obj.get_good_stores()
-stores_with_demand = set(cfg['demand'].keys())
-new_stores = set(good_stores) - stores_with_demand
-closed_stores = stores_with_demand - set(good_stores)
-
-print(f"Total Stores: {len(cfg['demand'].keys())}", f'Total good Stores: {len(good_stores)}', \
-      f'Total new_stores:{len(new_stores)}', f'Total closed_stores: {len(closed_stores)}', sep='\n')
-
-# Remove closed stores.
-for store in closed_stores:
-    cfg['demand'].pop(store)
-
-print(f"Total Stores after removal of old stores: {len(cfg['demand'])}")
-
-# Assigning default value for new_stores.
-for new_store in new_stores:
-    if new_store not in cfg['demand'].keys():
-       cfg['demand'][new_store] = -1
-
-print(f"Total Stores after adding new_stores: {len(cfg['demand'])}")
-
-total_proxy_demand_needed = sum(1 for _ in filter(lambda val: val == -1 ,cfg['demand'].values()))
-print(f"Total proxy values needed: {total_proxy_demand_needed}")
-
-#Assign average value to new stores.
-avg_across_demand = np.mean([_ for _ in filter(lambda val: val != -1 ,cfg['demand'].values())])
-for new_store in new_stores:
-       cfg['demand'][new_store] = avg_across_demand
+cfg['mill_supply_capacity'] = server_obj.get_mill_capacity()
+import pdb; pdb.set_trace()
 
 #### GUROBI OPTIMIZATION MODEL.
-dominos = grb.Model()
-dominos.modelSense = grb.GRB.MINIMIZE
-centers = cfg['cost'].keys()
-stores = cfg['demand'].keys()
+ardent = grb.Model()
+ardent.modelSense = grb.GRB.MINIMIZE
+
+# Indices
+mills = cfg['mill_trasport_cost'].keys()
+centers = cfg['center_demand'].keys()
 
 # Decision variables
-dough_delivery = {}
-for center in centers:
-      for store in stores:
-            dough_delivery[center, store] = dominos.addVar(obj=(cfg['distance'][center, store]*cfg['cost'][center])*2.0/9000, name=f'{center}_{store}')
+flour_delivery = {}
+for mill in mills:
+      for center in centers:
+            flour_delivery[mill, center] = ardent.addVar(obj=(cfg['distance'][mill, center]*cfg['mill_trasport_cost'][mill])*2.0, name=f'{mill}_{center}')
 
+ardent.update()
+ardent.write('ardent.lp')
+
+'''
 #Constraints
 my_constr = {}
 

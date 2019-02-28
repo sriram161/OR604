@@ -9,5 +9,7 @@ class Mills(base):
     MILLID = Column(String(50), primary_key=True)
     LATITUDE= Column(Float, nullable=False)
     LONGITUDE= Column(Float, nullable=False)
-    SUPPLY_CAPACITY= Column(Integer, nullable=False) # (Uint/ week) units.
+    SUPPLY_CAPACITY= Column(Integer, nullable=False) # (Uint/ week) units. Sacks.
     DIST_COST= Column(Float, nullable=False) # ($/ mile) units.
+
+# Mills distribute to Centers.
