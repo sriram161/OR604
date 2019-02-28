@@ -1,4 +1,6 @@
 # user ignore patterns.
+*.lp
+*.db
 *.csv
 
 # Byte-compiled / optimized / DLL files
