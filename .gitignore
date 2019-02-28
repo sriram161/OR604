@@ -1,4 +1,5 @@
 # user ignore patterns.
+*.vscode
 *.lp
 *.db
 *.csv
