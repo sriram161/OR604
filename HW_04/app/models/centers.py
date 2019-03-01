@@ -10,7 +10,7 @@ class Centers(base):
     ADDRESS= Column(String(50), nullable=False)
     LATITUDE= Column(Float, nullable=False)
     LONGITUDE= Column(Float, nullable=False)
-    SUPPLY_CAPACITY= Column(Integer, nullable=False) # (Dough/ week) units.
-    DIST_COST= Column(Float, nullable=False) # ($/mile) units.
+    SUPPLY_CAPACITY= Column(Integer, nullable=False) # (Dough/ week)
+    DIST_COST= Column(Float, nullable=False) # ($/mile)
 
 # Centers distribute to shops.

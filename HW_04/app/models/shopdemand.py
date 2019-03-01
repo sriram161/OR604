@@ -6,7 +6,7 @@ base=get_base()
 
 class ShopDemand(base):
     __tablename__ = 'shopdemand'
-    STOREID = Column(BigInteger, nullable=False) # Store label.
-    AVG_DAILY_DEMAND= Column(Integer, nullable=False) # Doughs. (units)
-    CENTERID = Column(String, primary_key=False) # Center label.
+    STOREID = Column(BigInteger, nullable=False)
+    AVG_DAILY_DEMAND= Column(Integer, nullable=False) # Doughs
+    CENTERID = Column(String, primary_key=False)
     id_ = Column(BigInteger, primary_key=True)

@@ -28,47 +28,94 @@ cfg = dict()
 
 server_obj = DataService(systemname, dbfile)
 
-cfg['mill_trasport_cost'] = server_obj.get_mill_transport_cost()  # Cost of trasport from mill to center.
-cfg['center_demand'] = server_obj.get_center_capacity()
+cfg['flour_production_cost'] = server_obj.get_mill_flour_prouction_cost()
+cfg['center_trasport_cost'] = server_obj.get_center_transport_cost()  # Cost of trasport from mill to center.
 cfg['distance'] = server_obj.get_distances()
+
+cfg['center_demand'] = server_obj.get_demand_center()
 cfg['mill_supply_capacity'] = server_obj.get_mill_capacity()
-import pdb; pdb.set_trace()
 
 #### GUROBI OPTIMIZATION MODEL.
 ardent = grb.Model()
 ardent.modelSense = grb.GRB.MINIMIZE
 
 # Indices
-mills = cfg['mill_trasport_cost'].keys()
-centers = cfg['center_demand'].keys()
+mills = cfg['flour_production_cost'].keys()
+centers = cfg['center_trasport_cost'].keys()
 
-# Decision variables
-flour_delivery = {}
+cfg['mill_retool_cost'] = {mill : 70000 for mill in mills}
+
+# Decision variables - 1 [Transportation integer] # counts in trucks
+mill_transport_route = {}
 for mill in mills:
-      for center in centers:
-            flour_delivery[mill, center] = ardent.addVar(obj=(cfg['distance'][mill, center]*cfg['mill_trasport_cost'][mill])*2.0, name=f'{mill}_{center}')
+   for center in centers:
+         mill_transport_route[mill, center] = ardent.addVar(
+             obj=(
+               cfg['distance'][mill, center] * cfg['center_trasport_cost'][center]),
+            vtype= grb.GRB.INTEGER,
+            name=f'transport_{mill}_{center}')
+
+# Decision variables - 2 [Mill open or close binary]
+mill_production = {}
+for mill in mills:
+         mill_production[mill] = ardent.addVar(
+             obj=(
+                 cfg['flour_production_cost'][mill]*cfg['mill_supply_capacity'][mill] +
+                 cfg['mill_retool_cost'][mill]),
+             vtype=grb.GRB.BINARY,
+             name=f'cost_{mill}')
+
+ardent.update()
+#Constraints
+my_constr = {}
+
+#Demand  # TODO demand -> doughs, Transport_route -> Truck 
+# Trasport_route * 880 -> Sacks
+# Scacks * 50 -> Pounds
+# Pounds / 2 -> cup
+# 1 Dough -> 3.25 cup
+# Trasport_route * 880 * 50 -> pounds
+# Trasport_route * 880 * 50 / 2 -> cups
+# Trasport_route * 880 * 50 / 2 / 3.25 -> Doughs
+for center in centers:
+   cname = f'demand_{center}'
+   my_constr[cname] = ardent.addConstr(grb.quicksum(
+       (mill_transport_route[mill, center] * 880 * 50) / (2 * 3.25) for mill in mills) >= cfg['center_demand'][center], name=cname)  # TODO ask professor >= or ==.
+#Supply constrains
+for mill in mills:
+   cname = f'supply_{mill}'
+   my_constr[cname] = ardent.addConstr(grb.quicksum(
+       mill_transport_route[mill, center] * 880 for center in centers) >= mill_production[mill] * cfg['mill_supply_capacity'][mill], name=cname)  # TODO ask professor >= or ==.
+
+#Non negativity constrains
+for mill in mills:
+   for center in centers:
+      cname = f'NonNegativity_{mill}'
+      my_constr[cname] = ardent.addConstr(mill_transport_route[mill, center] >= 0, name=cname)  # TODO ask professor >= or ==.
+
+"""
+#Service only by one mill.  # supply -> unit/week is it truck loads per week? or sacks per week?
+# 
+for center in centers:
+   cname = f'one_mill_{center}'
+   my_constr[cname] = ardent.addConstr(grb.quicksum((route_exists[mill, center]) for mill in mills) == 1, name=cname)
+
+# Supply and demand.
+#for mill in mills:
+#     my_constr[cname] = ardent.addConstr(grb.quicksum(
+#      mill_transport_route[mill, center]*cfg['center_demand'][center] for center in centers) >= 
+#      mill_production[mill]*cfg['mill_supply_capacity'][mill],
+#      name=cname)
+"""
 
 ardent.update()
 ardent.write('ardent.lp')
 
+ardent.optimize()
+ardent.update()
+#import pdb; pdb.set_trace()
+
 '''
-#Constraints
-my_constr = {}
-
-for center in centers:
-   cname = f'{center}'
-   my_constr[cname] = dominos.addConstr(grb.quicksum(dough_delivery[center, store] for store in stores) <= cfg['capacity'][center], name=cname)
-
-for store in stores:
-   cname = f'{store}'
-   my_constr[cname] = dominos.addConstr(grb.quicksum(dough_delivery[center, store] for center in centers) >= cfg['demand'][store], name=cname)
-
-dominos.update()
-dominos.write('dominos.lp')
-
-dominos.optimize()
-dominos.update()
-
 #### OUTPUT RESULTS FILE.
 optimal_values = [Results(ID_=idx ,CENTER_ID=item[0][0].replace('!', ' '), STORE_NUMBER=item[0][1], DOUGHS_VALUE=item[1].X)
                   for idx, item in enumerate(dough_delivery.items())]
