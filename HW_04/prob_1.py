@@ -45,14 +45,16 @@ centers = cfg['center_trasport_cost'].keys()
 
 cfg['mill_retool_cost'] = {mill : 70000 for mill in mills}
 
-# Decision variables - 1 [Transportation integer] # counts in trucks
+# Decision variables - 1 [Transportation integer] # dough
 mill_transport_route = {}
 for mill in mills:
    for center in centers:
          mill_transport_route[mill, center] = ardent.addVar(
              obj=(
-               cfg['distance'][mill, center] * cfg['center_trasport_cost'][center]),
-            vtype= grb.GRB.INTEGER,
+               cfg['distance'][mill, center] * cfg['center_trasport_cost'][center] * (880*50*2/3.25) * cfg['center_demand'][center] +
+               cfg['flour_production_cost'][mill] * (2*50/3.25) * cfg['center_demand'][center]
+               ),
+            vtype= grb.GRB.BINARY,
             name=f'transport_{mill}_{center}')
 
 # Decision variables - 2 [Mill open or close binary]
@@ -60,7 +62,6 @@ mill_production = {}
 for mill in mills:
          mill_production[mill] = ardent.addVar(
              obj=(
-                 cfg['flour_production_cost'][mill]*cfg['mill_supply_capacity'][mill] +
                  cfg['mill_retool_cost'][mill]),
              vtype=grb.GRB.BINARY,
              name=f'cost_{mill}')
@@ -69,44 +70,26 @@ ardent.update()
 #Constraints
 my_constr = {}
 
-#Demand  # TODO demand -> doughs, Transport_route -> Truck 
-# Trasport_route * 880 -> Sacks
-# Scacks * 50 -> Pounds
-# Pounds / 2 -> cup
-# 1 Dough -> 3.25 cup
-# Trasport_route * 880 * 50 -> pounds
-# Trasport_route * 880 * 50 / 2 -> cups
-# Trasport_route * 880 * 50 / 2 / 3.25 -> Doughs
-for center in centers:
-   cname = f'demand_{center}'
-   my_constr[cname] = ardent.addConstr(grb.quicksum(
-       (mill_transport_route[mill, center] * 880 * 50) / (2 * 3.25) for mill in mills) >= cfg['center_demand'][center], name=cname)  # TODO ask professor >= or ==.
-#Supply constrains
-for mill in mills:
-   cname = f'supply_{mill}'
-   my_constr[cname] = ardent.addConstr(grb.quicksum(
-       mill_transport_route[mill, center] * 880 for center in centers) >= mill_production[mill] * cfg['mill_supply_capacity'][mill], name=cname)  # TODO ask professor >= or ==.
-
-#Non negativity constrains
+# Availability constraint
 for mill in mills:
    for center in centers:
-      cname = f'NonNegativity_{mill}'
-      my_constr[cname] = ardent.addConstr(mill_transport_route[mill, center] >= 0, name=cname)  # TODO ask professor >= or ==.
+      cname = f'avail_{mill}_{center}'
+      my_constr[cname] = ardent.addConstr(
+         mill_transport_route[mill, center] <= mill_production[mill], name=cname)
 
-"""
-#Service only by one mill.  # supply -> unit/week is it truck loads per week? or sacks per week?
-# 
+# Center served by only 1 mill.
 for center in centers:
-   cname = f'one_mill_{center}'
-   my_constr[cname] = ardent.addConstr(grb.quicksum((route_exists[mill, center]) for mill in mills) == 1, name=cname)
+      cname = f'serve_{center}'
+      my_constr[cname] = ardent.addConstr(grb.quicksum(
+          mill_transport_route[mill, center] for mill in mills) == 1,  name=cname)
 
-# Supply and demand.
-#for mill in mills:
-#     my_constr[cname] = ardent.addConstr(grb.quicksum(
-#      mill_transport_route[mill, center]*cfg['center_demand'][center] for center in centers) >= 
-#      mill_production[mill]*cfg['mill_supply_capacity'][mill],
-#      name=cname)
-"""
+# my supply constrain
+for mill in mills:
+      cname = f'supply_{mill}'
+      my_constr[cname] = ardent.addConstr(grb.quicksum(
+          (2*50/3.25) * cfg['mill_supply_capacity'][mill] * mill_production[mill] - 
+          cfg['center_demand'][center] * mill_transport_route[mill, center] for center in centers) >= 0,
+       name = cname)
 
 ardent.update()
 ardent.write('ardent.lp')
