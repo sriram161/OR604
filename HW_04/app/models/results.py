@@ -9,4 +9,4 @@ class Results(base):
     ID_ = Column(BigInteger, primary_key=True)
     CENTERID = Column(String(50), nullable=False)
     STOREID= Column(String(50), nullable=False)
-    DOUGHS_VALUE= Column(Float, nullable=False)
+    ROUTE= Column(Integer, nullable=False)

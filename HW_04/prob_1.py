@@ -18,22 +18,22 @@ distribution_centers = r"Distributor_Data.csv"
 mills = r"Ardent_Mills_Data.csv"
 
 #### Please uncomment below and run to create and load tables with data.
-#create_tables(systemname, dbfile)
-#load_shopdemand_table(data_path, shops, systemname, dbfile)
-#load_centers_table(data_path, distribution_centers, systemname, dbfile)
-#load_mills_table(data_path, mills, systemname, dbfile)
+create_tables(systemname, dbfile)
+load_shopdemand_table(data_path, shops, systemname, dbfile)
+load_centers_table(data_path, distribution_centers, systemname, dbfile)
+load_mills_table(data_path, mills, systemname, dbfile)
 
 #### Data preparation for optimization.
 cfg = dict()
 
 server_obj = DataService(systemname, dbfile)
 
-cfg['flour_production_cost'] = server_obj.get_mill_flour_prouction_cost()
-cfg['center_trasport_cost'] = server_obj.get_center_transport_cost()  # Cost of trasport from mill to center.
-cfg['distance'] = server_obj.get_distances()
+cfg['flour_production_cost'] = server_obj.get_mill_flour_prouction_cost() # $/sacks
+cfg['center_trasport_cost'] = server_obj.get_center_transport_cost()  #  $/mile truck load.
+cfg['distance'] = server_obj.get_distances() # mile
+cfg['center_demand'] = server_obj.get_demand_center() # dough
+cfg['mill_supply_capacity'] = server_obj.get_mill_capacity() # sacks
 
-cfg['center_demand'] = server_obj.get_demand_center()
-cfg['mill_supply_capacity'] = server_obj.get_mill_capacity()
 
 #### GUROBI OPTIMIZATION MODEL.
 ardent = grb.Model()
@@ -43,16 +43,16 @@ ardent.modelSense = grb.GRB.MINIMIZE
 mills = cfg['flour_production_cost'].keys()
 centers = cfg['center_trasport_cost'].keys()
 
-cfg['mill_retool_cost'] = {mill : 70000 for mill in mills}
+cfg['mill_retool_cost'] = {mill : 700000 for mill in mills}
 
-# Decision variables - 1 [Transportation integer] # dough
+# Decision variables - 1 [Transportation integer] # truck load
 mill_transport_route = {}
 for mill in mills:
    for center in centers:
          mill_transport_route[mill, center] = ardent.addVar(
              obj=(
-               cfg['distance'][mill, center] * cfg['center_trasport_cost'][center] * (880*50*2/3.25) * cfg['center_demand'][center] +
-               cfg['flour_production_cost'][mill] * (2*50/3.25) * cfg['center_demand'][center]
+               cfg['distance'][mill, center] * cfg['center_trasport_cost'][center] * (3.25/880*50*2) * cfg['center_demand'][center] +
+               cfg['flour_production_cost'][mill] * (3.25/(2*50)) * cfg['center_demand'][center]
                ),
             vtype= grb.GRB.BINARY,
             name=f'transport_{mill}_{center}')
@@ -87,8 +87,8 @@ for center in centers:
 for mill in mills:
       cname = f'supply_{mill}'
       my_constr[cname] = ardent.addConstr(grb.quicksum(
-          (2*50/3.25) * cfg['mill_supply_capacity'][mill] * mill_production[mill] - 
-          cfg['center_demand'][center] * mill_transport_route[mill, center] for center in centers) >= 0,
+          2 * 50 * cfg['mill_supply_capacity'][mill] * mill_production[mill] - 
+          3.25 * cfg['center_demand'][center] * mill_transport_route[mill, center] for center in centers) >= 0,
        name = cname)
 
 ardent.update()
@@ -96,11 +96,17 @@ ardent.write('ardent.lp')
 
 ardent.optimize()
 ardent.update()
-#import pdb; pdb.set_trace()
 
-'''
+for idx, item in enumerate(mill_production.items()):
+   if item[1].X != 0:
+      print(item[0], item[1].X)
+
+for idx, item in enumerate(mill_transport_route.items()):
+   if item[1].X != 0:
+      print(item[0], item[1].X)
+
+
 #### OUTPUT RESULTS FILE.
-optimal_values = [Results(ID_=idx ,CENTER_ID=item[0][0].replace('!', ' '), STORE_NUMBER=item[0][1], DOUGHS_VALUE=item[1].X)
-                  for idx, item in enumerate(dough_delivery.items())]
+optimal_values = [Results(ID_=idx, CENTERID=item[0][0], STOREID=item[0][1], ROUTE=item[1].X)
+                  for idx, item in enumerate(mill_transport_route.items())]
 server_obj.add_records(optimal_values)
-'''

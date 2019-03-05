@@ -1,0 +1,19 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "hw04",
+            "type": "shell",
+            "command": "C:\\Users\\notme\\AppData\\Local\\conda\\conda\\envs\\OR604\\python.exe",
+            "args": [
+                "prob_1.py"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
