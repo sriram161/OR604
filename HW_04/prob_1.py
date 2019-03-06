@@ -45,14 +45,14 @@ centers = cfg['center_trasport_cost'].keys()
 
 cfg['mill_retool_cost'] = {mill : 700000 for mill in mills}
 
-# Decision variables - 1 [Transportation integer] # truck load
+# Decision variables - 1 [Transportation integer] # truck load <$ = $ + $> convertions factor in doughs.
 mill_transport_route = {}
 for mill in mills:
    for center in centers:
          mill_transport_route[mill, center] = ardent.addVar(
              obj=(
-               cfg['distance'][mill, center] * cfg['center_trasport_cost'][center] * (3.25/880*50*2) * cfg['center_demand'][center] +
-               cfg['flour_production_cost'][mill] * (3.25/(2*50)) * cfg['center_demand'][center]
+               cfg['distance'][mill, center] * cfg['center_trasport_cost'][center] * (3.25/880*50*3.33) * cfg['center_demand'][center] +
+               cfg['flour_production_cost'][mill] * (3.25/(3.33*50)) * cfg['center_demand'][center]
                ),
             vtype= grb.GRB.BINARY,
             name=f'transport_{mill}_{center}')
@@ -70,24 +70,24 @@ ardent.update()
 #Constraints
 my_constr = {}
 
-# Availability constraint
+#Availability constraint <no units>
 for mill in mills:
    for center in centers:
       cname = f'avail_{mill}_{center}'
       my_constr[cname] = ardent.addConstr(
          mill_transport_route[mill, center] <= mill_production[mill], name=cname)
 
-# Center served by only 1 mill.
+# Center served by only 1 mill. <no units>
 for center in centers:
       cname = f'serve_{center}'
       my_constr[cname] = ardent.addConstr(grb.quicksum(
           mill_transport_route[mill, center] for mill in mills) == 1,  name=cname)
 
-# my supply constrain
+# my supply constrain <cups>
 for mill in mills:
       cname = f'supply_{mill}'
       my_constr[cname] = ardent.addConstr(grb.quicksum(
-          2 * 50 * cfg['mill_supply_capacity'][mill] * mill_production[mill] - 
+          3.33 * 50 * cfg['mill_supply_capacity'][mill] * mill_production[mill] - 
           3.25 * cfg['center_demand'][center] * mill_transport_route[mill, center] for center in centers) >= 0,
        name = cname)
 
