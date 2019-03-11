@@ -18,53 +18,45 @@ feed_cost = r"feedstock.csv"
 milk_supply = r"production.csv"
 
 #### Please uncomment below and run to create and load tables with data.
-create_tables(systemname, dbfile)
-load_production_table(data_path, milk_supply, systemname, dbfile)
-load_milkdemand_table(data_path, milk_demand, systemname, dbfile)
-load_cowfeed_table(data_path, feed_cost, systemname, dbfile)
+# create_tables(systemname, dbfile)
+# load_production_table(data_path, milk_supply, systemname, dbfile)
+# load_milkdemand_table(data_path, milk_demand, systemname, dbfile)
+# load_cowfeed_table(data_path, feed_cost, systemname, dbfile)
 
 #### Data preparation for optimization.
-# cfg = dict()
+cfg = dict()
 
-# server_obj = DataService(systemname, dbfile)
+server_obj = DataService(systemname, dbfile)
 
-# cfg['flour_production_cost'] = server_obj.get_mill_flour_prouction_cost() # $/sacks
-# cfg['center_trasport_cost'] = server_obj.get_center_transport_cost()  #  $/mile truck load.
-# cfg['distance'] = server_obj.get_distances() # mile
-# cfg['center_demand'] = server_obj.get_demand_center() # dough
-# cfg['mill_supply_capacity'] = server_obj.get_mill_capacity() # sacks
+cfg['milk_production'] = server_obj.get_milk_production() # gals/calving_cow for a demand month.s
+cfg['feed_cost'] = server_obj.get_feed_cost()  #  $/cow-month.
+cfg['milk_demand'] = server_obj.get_milk_demand() # gals for demand month.
+cfg['milk_price'] = server_obj.get_milk_price() # $/gal.
 
+import pprint
+pprint.pprint(cfg)
 
 #### GUROBI OPTIMIZATION MODEL.
-# ardent = grb.Model()
-# ardent.modelSense = grb.GRB.MINIMIZE
+dairy = grb.Model()
+dairy.modelSense = grb.GRB.MINIMIZE
 
 # Indices
-# mills = cfg['flour_production_cost'].keys()
-# centers = cfg['center_trasport_cost'].keys()
+demand_months = cfg['milk_demand'].keys()
+calving_months = cfg['milk_price'].keys()
 
-# cfg['mill_retool_cost'] = {mill : 700000 for mill in mills}
+# Decision variables - 1 [Transportation integer] # No.of Cow calving cows for a demand month. 
+no_cows = {}
+# TODO: Re write the paper objective function to include cost of wasted milk.
+for calvin_month in calving_months:
+    for demand_month in demand_months:
+         no_cows[demand_month, calvin_month] = dairy.addVar(
+             obj=(
+                 cfg['feed_cost'][demand_month, calvin_month] +
+                 cfg['milk_production'][demand_month, calvin_month]),
+            vtype= grb.GRB.INTEGER,
+            name=f'ncow_D{demand_month}_C{calvin_month}')
 
-# Decision variables - 1 [Transportation integer] # truck load <$ = $ + $> convertions factor in doughs.
-# mill_transport_route = {}
-# for mill in mills:
-#    for center in centers:
-#          mill_transport_route[mill, center] = ardent.addVar(
-#              obj=(
-#                cfg['distance'][mill, center] * cfg['center_trasport_cost'][center] * (3.25/880*50*3.33) * cfg['center_demand'][center] +
-#                cfg['flour_production_cost'][mill] * (3.25/(3.33*50)) * cfg['center_demand'][center]
-#                ),
-#             vtype= grb.GRB.BINARY,
-#             name=f'transport_{mill}_{center}')
-
-# Decision variables - 2 [Mill open or close binary]
-# mill_production = {}
-# for mill in mills:
-#          mill_production[mill] = ardent.addVar(
-#              obj=(
-#                  cfg['mill_retool_cost'][mill]),
-#              vtype=grb.GRB.BINARY,
-#              name=f'cost_{mill}')
+# TODO: Create paper model constraints.
 
 # ardent.update()
 #Constraints
@@ -91,8 +83,8 @@ load_cowfeed_table(data_path, feed_cost, systemname, dbfile)
 #           3.25 * cfg['center_demand'][center] * mill_transport_route[mill, center] for center in centers) >= 0,
 #        name = cname)
 
-# ardent.update()
-# ardent.write('ardent.lp')
+dairy.update()
+dairy.write('dairy.lp')
 
 # ardent.optimize()
 # ardent.update()
