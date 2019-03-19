@@ -36,7 +36,7 @@ class DataService(object):
         with DBSession(self.systemname, self.dbfile) as session:
             """ Feed cost indexed by calving month ($/cow)"""
             cost = session.query(CowFeed.CALVIN_MONTH, CowFeed.FEED_COST)
-            return {(demand_month, int(obj[0])): obj[1]/12.0 for obj in cost for demand_month in range(1, 13)}
+            return {obj[0]: obj[1] for obj in cost}
                  
     def get_milk_demand(self) -> dict:
         """ Milk demand indexed by demand month (gals)"""
