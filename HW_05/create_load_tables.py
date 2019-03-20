@@ -8,7 +8,7 @@ from app.services.data import DataService
 from app.models.results import Optcows, Optmilk
 
 #### Please change path relative to your system.
-data_path = r"C:/Users/notme/Documents/Development/OR604/HW_05/app/data/"
+data_path = r"c:/Users/notme/Documents/Development/OR604/HW_05/app/data/"
 dbfile = r'hw_05.db'  # Please give a new db file here.
 
 #### CONSTANTS
@@ -17,6 +17,7 @@ milk_demand = r"demand_price.csv"
 feed_cost = r"feedstock.csv"
 milk_supply = r"production.csv"
 
+# NOTE: If the program fails please delete hw_05.db and rerun the program.
 # INFO: create tables.
 create_tables(systemname, dbfile)
 
