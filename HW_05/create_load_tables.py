@@ -5,7 +5,7 @@ from app.db.onetimes import load_production_table
 from app.db.onetimes import load_milkdemand_table
 from app.db.onetimes import load_cowfeed_table
 from app.services.data import DataService
-from app.models.results import Results
+from app.models.results import Optcows, Optmilk
 
 #### Please change path relative to your system.
 data_path = r"C:/Users/notme/Documents/Development/OR604/HW_05/app/data/"

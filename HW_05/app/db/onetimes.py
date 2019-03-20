@@ -6,7 +6,7 @@ from app.db.settings import get_base
 from app.models.production import Production
 from app.models.cowfeed import CowFeed
 from app.models.milkdemand import MilkDemand
-from app.models.results import Results
+from app.models.results import Optcows, Optmilk
 from app.db.context import DBSession
 from itertools import count
 
@@ -17,7 +17,8 @@ def create_tables(systemname, dbfile):
     Production.__table__.create(sqlite_engine, checkfirst=True)
     MilkDemand.__table__.create(sqlite_engine, checkfirst=True)
     CowFeed.__table__.create(sqlite_engine, checkfirst=True)
-    Results.__table__.create(sqlite_engine, checkfirst=True)
+    Optcows.__table__.create(sqlite_engine, checkfirst=True)
+    Optmilk.__table__.create(sqlite_engine, checkfirst=True)
     sqlite_engine.dispose()
 
 def load_production_table(data_path, _file, systemname, dbfile):

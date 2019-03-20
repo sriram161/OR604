@@ -4,21 +4,14 @@
 
 # Execution process:
 python create_load_tables.py  # create and load data.
-python opt_with_feed.py       # Run optimization with feedcost.
-python opt_without_feed.py    # Run optimization with out feedcost.
+python opt_dairy.py    # Run optimization.
 
 # OUTPUTS
-results table in hw_05.db.
+optcows, optmilk tables in hw_05.db.
 
 # With feed result in hw_05.db query.
-select * from results where SENARIO='FEED';
-
-# With no feed result in hw_05.db query.
-select * from results where SENARIO='NO FEED';
-
+select * from optmilk where FLAG='EXCESS';
+select * from optmilk where FLAG='SHORTAGE';
 
 # ANALYSIS:
 select SCENARIO, sum(COWCOUNT) from results group by SCENARIO;
-
-with feed cost we need less number of cows FEED|15201.0
-With out feed cost we need more number of cows NO FEED|27712.0

@@ -4,7 +4,6 @@ from app.db.settings import get_base
 
 base=get_base()
 
-# TODO: Check the units of data.
 class Production(base):
     __tablename__ = 'production'
     CALVIN_MONTH = Column(String,  primary_key=True)

@@ -8,5 +8,3 @@ class CowFeed(base):
     __tablename__ = 'cowfeed'
     CALVIN_MONTH = Column(Integer, primary_key=True)
     FEED_COST = Column(Float, nullable=False) # $/years
-
-# Mills distribute to Centers.

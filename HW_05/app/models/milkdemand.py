@@ -9,5 +9,3 @@ class MilkDemand(base):
     MONTH = Column(Integer, primary_key=True)
     DEMAND= Column(Float, nullable=False) # gal
     PRICE= Column(Float, nullable=False) # $/gal
-
-# Centers distribute to shops.
