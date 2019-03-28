@@ -22,30 +22,27 @@ def create_tables(systemname, dbfile):
     Opponents.__table__.create(sqlite_engine, checkfirst=True)
     sqlite_engine.dispose()
 
-
-# TODO: code data to load in to database
 def load_game_variables_table(data_path, _file, systemname, dbfile):
     with DBSession(systemname, dbfile) as session, codecs.open(data_path + _file, 'r',
                                                                encoding='ascii', errors='ignore') as f_handle:
         next(f_handle) # Skip headers of csv file.
+        row_id = count(1)
         reader = csv.DictReader(f_handle, fieldnames=GameVariables.metadata.tables['gamevariables'].columns.keys())
         for item in reader:
+            item['ROW_ID'] = int(next(row_id))
             session.add(GameVariables(**item))
         print(f"File_loaded...! {_file}")
-
 
 def load_network_slot_week_table(data_path, _file, systemname, dbfile):
     with DBSession(systemname, dbfile) as session, codecs.open(data_path + _file, 'r',
                                                                encoding='ascii', errors='ignore') as f_handle:
         next(f_handle) # Skip headers of csv file.
         reader = csv.DictReader(f_handle, fieldnames=NetworkSlots.metadata.tables['networkslots'].columns.keys())
+        row_id = count(1)
         for item in reader:
-            item['MONTH'] = int(item['MONTH'])
-            item['DEMAND'] = float(item['DEMAND'])
-            item['PRICE'] = float(item['PRICE'].strip(' ').strip('$'))
-            session.add(MilkDemand(**item))
+            item['ROW_ID'] = int(next(row_id))
+            session.add(NetworkSlots(**item))
         print(f"File_loaded...! {_file}")
-
 
 def load_opponents_table(data_path, _file, systemname, dbfile):
     with DBSession(systemname, dbfile) as session, codecs.open(data_path + _file, 'r',
@@ -53,12 +50,19 @@ def load_opponents_table(data_path, _file, systemname, dbfile):
         next(f_handle) # Skip headers of csv file.
         reader = csv.DictReader(f_handle, fieldnames=Opponents.metadata.tables['opponents'].columns.keys())
         for item in reader:
-            item['CALVIN_MONTH'] = int(item['CALVIN_MONTH'].strip())
-            item['FEED_COST'] = float(item['FEED_COST'].strip(' ').strip('$'))
-            obj = CowFeed(**item)
+            obj = Opponents(**item)
             session.add(obj)
         print(f"File_loaded...! {_file}")
     
-
 def load_team_data_table(data_path, _file, systemname, dbfile):
-    pass
+    with DBSession(systemname, dbfile) as session, codecs.open(data_path + _file, 'r',
+                                                               encoding='ascii', errors='ignore') as f_handle:
+        next(f_handle)  # Skip headers of csv file.
+        row_id = count(1)
+        reader = csv.DictReader(
+            f_handle, fieldnames=TeamData.metadata.tables['teamdata'].columns.keys())
+        for item in reader:
+            item['ROW_ID'] = int(next(row_id))
+            obj = TeamData(**item)
+            session.add(obj)
+        print(f"File_loaded...! {_file}")

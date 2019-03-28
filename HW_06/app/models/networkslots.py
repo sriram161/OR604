@@ -6,6 +6,7 @@ base = get_base()
 
 class NetworkSlots(base):
     __tablename__ = 'networkslots'
-    WEEK = Column(Integer, primary_key=True)
+    WEEK = Column(Integer, nullable=False)
     SLOT = Column(String(4), nullable=False)
     NETWORK = Column(String(3), nullable=False)
+    ROW_ID = Column(Integer, primary_key=True)

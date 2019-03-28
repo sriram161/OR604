@@ -4,17 +4,21 @@ from app.db.settings import get_base
 from app.db.context import DBSession
 from sqlalchemy.orm import aliased
 from sqlalchemy import func
-from app.models.production import Production
-from app.models.milkdemand import MilkDemand
-from app.models.cowfeed import CowFeed 
+from app.models.gamevariables import GameVariables
+from app.models.networkslots import NetworkSlots
+from app.models.opponents import Opponents
+from app.models.teamdata import TeamData
+
 from app.services.computational.haver_vincenty import haversine_
 
+# TODO: code getter 
+'''
 class DataService(object):
     def __init__(self, systemname, dbfile):
         self.dbfile = dbfile
         self.systemname = systemname
 
-    def get_milk_production(self) -> dict:
+    def get_(self) -> dict:
         """ milk prodiction matrix (calving_month, demand_month)"""
         with DBSession(self.systemname, self.dbfile) as session:
             cost = session.query(Production.CALVIN_MONTH,
@@ -54,3 +58,4 @@ class DataService(object):
         with DBSession(self.systemname, self.dbfile) as session:
              session.add_all(objects)
     
+'''

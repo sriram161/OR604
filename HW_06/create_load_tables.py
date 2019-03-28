@@ -1,11 +1,10 @@
 import numpy as np
 import gurobipy as grb
 from app.db.onetimes import create_tables
-from app.db.onetimes import load_production_table
-from app.db.onetimes import load_milkdemand_table
-from app.db.onetimes import load_cowfeed_table
-from app.services.data import DataService
-from app.models.results import Optcows, Optmilk
+from app.db.onetimes import load_game_variables_table
+from app.db.onetimes import load_network_slot_week_table
+from app.db.onetimes import load_team_data_table
+from app.db.onetimes import load_opponents_table
 
 #### Please change path relative to your system.
 data_path = r"c:/Users/notme/Documents/Development/OR604/HW_06/app/data/"
