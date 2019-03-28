@@ -1,0 +1,16 @@
+# Edit to script before execution.
+1-> Change "data_path" variable in create_load_tables.py, opt_with_feed.py and opt_without_feed.py
+    to reflect your absolute system path to hw_05/app folder.
+
+# Execution process:
+python create_load_tables.py  # create and load data.
+python opt_dairy.py    # Run optimization.
+
+NOTE**: If database creation program fails. Please delete hw_05.db and rerun the program.
+
+# OUTPUTS
+optcows, optmilk tables in hw_05.db.
+
+# With feed result in hw_05.db query.
+select * from optmilk where FLAG='EXCESS';
+select * from optmilk where FLAG='SHORTAGE';
