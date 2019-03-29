@@ -9,7 +9,7 @@ class TeamData(base):
     TEAM = Column(String(3),  nullable=False)
     CONF = Column(String(3),  nullable=False)
     DIV = Column(String(5),  nullable=False)
-    QUALITY = Column(Integer,  nullable=False)
+    QUALITY = Column(Float,  nullable=False)
     TIMEZONE = Column(Integer,  nullable=False)
     ROW_ID = Column(Integer, primary_key=True)
 

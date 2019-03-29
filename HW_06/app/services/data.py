@@ -8,54 +8,63 @@ from app.models.gamevariables import GameVariables
 from app.models.networkslots import NetworkSlots
 from app.models.opponents import Opponents
 from app.models.teamdata import TeamData
+from collections import defaultdict
 
 from app.services.computational.haver_vincenty import haversine_
 
-# TODO: code getter 
-'''
+# TODO: code getter functions
+
+
 class DataService(object):
     def __init__(self, systemname, dbfile):
         self.dbfile = dbfile
         self.systemname = systemname
 
-    def get_(self) -> dict:
-        """ milk prodiction matrix (calving_month, demand_month)"""
+    def get_away_dict(self) -> dict:
+        """ away matrix key:- team value :- list of teams"""
         with DBSession(self.systemname, self.dbfile) as session:
-            cost = session.query(Production.CALVIN_MONTH,
-                                  Production.M_1,
-                                  Production.M_2,
-                                  Production.M_3,
-                                  Production.M_4,
-                                  Production.M_5,
-                                  Production.M_6,
-                                  Production.M_7,
-                                  Production.M_8,
-                                  Production.M_9,
-                                  Production.M_10,
-                                  Production.M_11,
-                                  Production.M_12)
-            return {(int(obj[0]),idx) : float(item) for obj in cost for idx, item in enumerate(obj[1:], start=1)}
-                 
-    def get_feed_cost(self) -> dict:
-        with DBSession(self.systemname, self.dbfile) as session:
-            """ Feed cost indexed by calving month ($/cow)"""
-            cost = session.query(CowFeed.CALVIN_MONTH, CowFeed.FEED_COST)
-            return {obj[0]: obj[1] for obj in cost}
-                 
-    def get_milk_demand(self) -> dict:
-        """ Milk demand indexed by demand month (gals)"""
-        with DBSession(self.systemname, self.dbfile) as session:
-            demand = session.query(MilkDemand.MONTH, MilkDemand.DEMAND)
-            return {obj[0]: obj[1] for obj in demand}
+            away_map = defaultdict(set)
+            aways = session.query(Opponents.AWAY_TEAM, Opponents.HOME_TEAM)
+            for item in aways:
+                away_map[item[0]].add(item[1])
+            for key in away_map.keys(): # add bye opponent to all away teams.
+                away_map[key].add('BYE')
+            return away_map
 
-    def get_milk_price(self) -> dict:
-        """ Milk market selling price indexed by demand month ($/gal)"""
+    def get_home_dict(self) -> dict:
         with DBSession(self.systemname, self.dbfile) as session:
-            price = session.query(MilkDemand.MONTH,MilkDemand.PRICE)
-            return {obj[0]: obj[1] for obj in price}
+            home_map = defaultdict(set)
+            homes = session.query(Opponents.HOME_TEAM, Opponents.AWAY_TEAM)
+            for item in homes:
+                home_map[item[0]].add(item[1])
+            return home_map
+
+    def get_team_list(self) -> set:
+        with DBSession(self.systemname, self.dbfile) as session:
+            teams = session.query(TeamData.TEAM).distinct()
+            return {item[0] for item in teams}
+
+    def get_network_list(self) -> list:
+        with DBSession(self.systemname, self.dbfile) as session:
+            networks = session.query(NetworkSlots.NETWORK).distinct()
+            return [item[0] for item in networks]
+
+    def get_slots_list(self) -> list:
+        with DBSession(self.systemname, self.dbfile) as session:
+            slots = session.query(NetworkSlots.SLOT).distinct()
+            return [item[0] for item in slots]
+
+    def get_game_variables(self):
+        with DBSession(self.systemname, self.dbfile) as session:
+            vars = session.query(GameVariables.AWAY_TEAM,
+            GameVariables.HOME_TEAM,
+            GameVariables.WEEK, # string
+            GameVariables.SLOT,
+            GameVariables.NETWORK,
+            GameVariables.QUAL_POINTS)
+            return [(item[0],item[1],item[2], item[3], item[4], item[5]) for item in vars]
 
     def add_records(self, objects:list) -> None:
         with DBSession(self.systemname, self.dbfile) as session:
              session.add_all(objects)
     
-'''

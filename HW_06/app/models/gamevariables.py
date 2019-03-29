@@ -13,5 +13,5 @@ class GameVariables(base):
     WEEK = Column(String(4), nullable=False)
     SLOT = Column(Integer, nullable=False)
     NETWORK = Column(String(3), nullable=False)
-    QUAL_POINTS = Column(Integer, nullable=False)
+    QUAL_POINTS = Column(Float, nullable=False)
     ROW_ID = Column(Integer, primary_key=True)
