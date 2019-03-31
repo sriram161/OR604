@@ -12,9 +12,6 @@ from collections import defaultdict
 
 from app.services.computational.haver_vincenty import haversine_
 
-# TODO: code getter functions
-
-
 class DataService(object):
     def __init__(self, systemname, dbfile):
         self.dbfile = dbfile
@@ -37,6 +34,8 @@ class DataService(object):
             homes = session.query(Opponents.HOME_TEAM, Opponents.AWAY_TEAM)
             for item in homes:
                 home_map[item[0]].add(item[1])
+            home_teams = set(home_map.keys())
+            home_map['BYE'] = home_teams # Add bye home team for all teams.
             return home_map
 
     def get_team_list(self) -> set:
