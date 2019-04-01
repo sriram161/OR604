@@ -139,24 +139,22 @@ for w in range(1, 17):
                           for t, h, w, s, n in seasons.select('*', '*', w, 'SUND', '*'))) == 1,
             name=cname)
 
-for n in ['CBS', 'FOX']:
-        for i in range(1, 16):
-            for w in range(i, i+3):        
+for i in range(1, 16):
+        for w in range(i, i+3):        
                 cname = f'08b_NoConsictDoubleHeaders_{w}'
                 w = str(w)
                 my_constr[cname] = nfl.addConstr(
                 (grb.quicksum(games[t, h, w, s, n]
-                                for t, h, w, s, n in seasons.select('*', '*', w, 'SUND', n))) <= 2,
+                                for t, h, w, s, n in seasons.select('*', '*', w, 'SUND', ['CBS', 'FOX']))) <= 2,
                 name=cname)
 
-for n in ['CBS', 'FOX']:
-            for w in [17]:        
-                cname = f'08c_DoubleHeaderInWeek_{w}_{n}'
-                w = str(w)
-                my_constr[cname] = nfl.addConstr(
-                (grb.quicksum(games[t, h, w, s, n]
-                                for t, h, w, s, n in seasons.select('*', '*', w, 'SUND', n))) == 1,
-                name=cname)
+for w in [17]:        
+        cname = f'08c_DoubleHeaderInWeek_{w}'
+        w = str(w)
+        my_constr[cname] = nfl.addConstr(
+        (grb.quicksum(games[t, h, w, s, n]
+                        for t, h, w, s, n in seasons.select('*', '*', w, 'SUND', ['CBS', 'FOX']))) == 1,
+        name=cname)
 
 # Constraint-> 9: Exactly one Sunday night game per week 1 to 16.
 
@@ -185,12 +183,15 @@ for w in [1]:
                         for t, h, w, s, n in seasons.select('*', '*', w, 'MONN', '*'))) == 2,
         name=cname)
 # QUESTION: A team hosting means is it playing as away or home???
-# for h in ['LAC', 'SF', 'SEA', 'OAK', 'LAR', 'DEN', 'ARI']:
-#         cname = f'10b_MondayNightGameHostedByWestCoastMountain_{h}'
-#         my_constr[cname] = nfl.addConstr(
-#             (grb.quicksum(games[t, h, w, s, n]
-#                           for t, h, w, s, n in seasons.select('*', h, '*', 'MONN', '*'))) >= 1,
-#             name=cname)
+# ANSWER: Team playing home.
+# select * from gamevariables where HOME_TEAM='LAC' and SLOT='MONN'; 
+# NOTE: NO game variables for LAC in week 1.
+
+cname = f'10b_MondayNightGameHostedByWestCoastMountain'
+my_constr[cname] = nfl.addConstr(
+        (grb.quicksum(games[t, h, w, s, n]
+                      for t, h, w, s, n in seasons.select('*', ['LAC', 'SF', 'SEA', 'OAK', 'LAR', 'DEN', 'ARI'], '1', 'MONN', '*'))) >= 1,
+        name=cname)
 
 for w in range(2, 17):
         cname = f'10c_ExacltyOneMondayNight_{w}'
