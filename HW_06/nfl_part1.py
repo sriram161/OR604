@@ -1,9 +1,12 @@
 import numpy as np
 import gurobipy as grb
 from app.services.data import DataService
+from app.models.results import Schedule
+import os
+path_ = os.getcwd()
 
-#### Please change path relative to your system.
-data_path = r"c:/Users/notme/Documents/Development/OR604/HW_06/app/data/"
+# NOTE: Always run the command from HW_06 folder.
+data_path = path_ + "/app/data/"
 dbfile = r'hw_06.db'  # Please give a new db file here.
 
 #### CONSTANTS
@@ -214,3 +217,18 @@ nfl.write('nfl.lp')
 
 nfl.optimize()
 nfl.update()
+
+print("shedule...")
+for idx, item in enumerate(games.items()):
+   if item[1].X != 0:
+      print(item[0], item[1].X)
+
+optimal_values = [Schedule(ROW_ID=idx, 
+                  AWAY_TEAM=item[0][0], 
+                  HOME_TEAM=item[0][1], 
+                  WEEK=item[0][2],
+                  SLOT=item[0][3],
+                  NETWORK=item[0][4],
+                  GAME_FLAG=item[1].X)
+                  for idx, item in enumerate(games.items())]
+server_obj.add_records(optimal_values)

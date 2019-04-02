@@ -5,9 +5,11 @@ from app.db.onetimes import load_game_variables_table
 from app.db.onetimes import load_network_slot_week_table
 from app.db.onetimes import load_team_data_table
 from app.db.onetimes import load_opponents_table
-
-#### Please change path relative to your system. <How to eliminate this data_path relative>
-data_path = r"c:/Users/notme/Documents/Development/OR604/HW_06/app/data/"
+import os
+path_ = os.getcwd()
+#### Please fix path if any error of file not found.
+# NOTE: Always run the command from HW_06 folder.
+data_path = path_ + "/app/data/"
 dbfile = r'hw_06.db'  # Please give a new db file here.
 
 #### CONSTANTS
