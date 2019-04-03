@@ -28,4 +28,3 @@ load_game_variables_table(data_path, game_variables, systemname, dbfile)
 load_network_slot_week_table(data_path, network_slot_week, systemname, dbfile)
 load_opponents_table(data_path, opponents, systemname, dbfile)
 load_team_data_table(data_path, team_data, systemname, dbfile)
-

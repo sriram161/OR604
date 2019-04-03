@@ -10,5 +10,3 @@ exec(open("create_load_tables.py").read())
 
 # Execute gurobi optimizer.
 exec(open("nfl_part1.py").read())
-
-
