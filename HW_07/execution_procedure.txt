@@ -1,0 +1,8 @@
+NOTE* Please download and unzip HW_06 folder and execute the command from inside 
+HW_06 folder.
+
+# Execution process:
+python runner.py  # creates tables, loads and optimization.
+
+# OUTPUTS
+schedule tables in hw_05.db.
