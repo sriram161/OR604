@@ -353,7 +353,7 @@ for a, h in cfg['opponents']: # Same divison zero.
         my_constr[cname] = nfl.addConstr(
                 grb.quicksum(games[a, h, w, s, n]
                                 for a, h, w, s, n in seasons.select(a, h, "17", '*', '*') if cfg['teams'][a][1] == cfg['teams'][h][1])
-                >= 1,
+                >= 0,
                 name=cname)
 
 # Constraint-> 20 No team playing Thursday night on the road should trave more than 1 time zone away.
