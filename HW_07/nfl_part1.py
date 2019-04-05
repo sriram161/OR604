@@ -269,9 +269,6 @@ for t in cfg['teams']:
                     >= 2,
                     name=cname)
 
-
-nfl.update()
-nfl.write('nfl.lp')
 # Constraint-> 14 Each team must play at least 4 homw/away games every 6 weeks
 for t in cfg['teams']:
         cname = f'14_Atleast2Away_{t}'
@@ -303,10 +300,24 @@ for t in cfg['teams']:
                     name=cname)
 
 # Constraint-> 16 Any team playing on Monday night in a given week cannot play Thursday night the next two weeks.
-# Constraint-> 17 All teams playing on Thursday night in a given week will play home the previous week.
+# infeasable
+for t in cfg['teams']:
+        cname = f'15_ThunAwayHomeWeekBefore_{t}'
+        for w in range(1, 16):
+                my_constr[cname] = nfl.addConstr(
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(t, list(cfg['away'][t]), str(w), 'MONN', '*')) -
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(list(cfg['home'][t]), t, [w+1, w+2], 'THUN', '*'))
+                    == 1,
+                    name=cname)
+
+# Constraint-> 17 All teams playing on Thursday nighst oft in a given week will play home the previous week.
 # Constraint-> 18 No team coming off of a BYE can play Thursday night
-# Constraint-> 19 Week 17 games can only consist of games between division opponents.
+# Constraint-> 19 Week 17 games can only consi games between division opponents.
 # Constraint-> 20 No team playing Thursday night on the road should trave more than 1 time zone away.
+nfl.update()
+nfl.write('nfl.lp')
 
 nfl.optimize()
 nfl.update()
