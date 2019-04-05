@@ -28,7 +28,7 @@ cfg['teams'] = server_obj.get_team_list()
 cfg['networks'] = server_obj.get_network_list()
 cfg['slots'] = server_obj.get_slots_list()
 cfg['game_variables'] = server_obj.get_game_variables()
-
+cfg['opponents'] = server_obj.get_opponents()
 # verify counts of the data to with quesion.
 print('Count of away teams:',len(cfg['away']))
 print('Count of home teams:', len(cfg['home']))
@@ -290,7 +290,7 @@ for t in cfg['teams']:
 # Constraint-> 15 All tesams playing away on Thrsday nigh are homw the week before.
 for t in cfg['teams']:
         cname = f'15_ThunAwayHomeWeekBefore_{t}'
-        for w in range(2, 18):
+        for w in range(2, 16):
                 my_constr[cname] = nfl.addConstr(
                     grb.quicksum(games[t, h, w, s, n]
                                  for t, h, w, s, n in seasons.select(t, list(cfg['away'][t]), str(w), 'THUN', '*')) +
@@ -300,21 +300,62 @@ for t in cfg['teams']:
                     name=cname)
 
 # Constraint-> 16 Any team playing on Monday night in a given week cannot play Thursday night the next two weeks.
-# infeasable
 for t in cfg['teams']:
-        cname = f'15_ThunAwayHomeWeekBefore_{t}'
+        cname = f'16_ThunAwayHomeWeekBefore_{t}'
         for w in range(1, 16):
                 my_constr[cname] = nfl.addConstr(
                     grb.quicksum(games[t, h, w, s, n]
-                                 for t, h, w, s, n in seasons.select(t, list(cfg['away'][t]), str(w), 'MONN', '*')) -
+                                 for t, h, w, s, n in seasons.select(t, list(cfg['away'][t]), str(w), 'MONN', '*')) +
                     grb.quicksum(games[t, h, w, s, n]
-                                 for t, h, w, s, n in seasons.select(list(cfg['home'][t]), t, [w+1, w+2], 'THUN', '*'))
-                    == 1,
+                                 for t, h, w, s, n in seasons.select(list(cfg['home'][t]), t, str(w), 'MONN', '*')) +
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(t, list(cfg['away'][t]), str(w+1), 'THUN', '*')) +
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(list(cfg['home'][t]), t, str(w+1), 'THUN', '*')) +
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(t, list(cfg['away'][t]), str(w+2), 'THUN', '*')) +
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(list(cfg['home'][t]), t, str(w+2), 'THUN', '*')) 
+                    <= 1,
                     name=cname)
 
-# Constraint-> 17 All teams playing on Thursday nighst oft in a given week will play home the previous week.
+# Constraint-> 17 All teams playing on Thursday night in a given week will play home the previous week.
+for t in cfg['teams']:
+        cname = f'17_ThursdayNightPrevWeekHome_{t}'
+        for w in range(2, 18):
+                my_constr[cname] = nfl.addConstr(
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(t, list(cfg['away'][t]), str(w), 'THUN', '*')) +
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(list(cfg['home'][t]), t, str(w), 'THUN', '*')) +
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(list(cfg['home'][t]), t, str(w-1), '*', '*'))
+                    <= 2,
+                    name=cname)
+                
 # Constraint-> 18 No team coming off of a BYE can play Thursday night
-# Constraint-> 19 Week 17 games can only consi games between division opponents.
+for t in cfg['teams']:
+        cname = f'18_TeamByeCannotPlayThursdayNight_{t}'
+        for w in range(4, 17):
+                my_constr[cname] = nfl.addConstr(
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(t, 'BYE', str(w), '*', '*')) +
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(t, list(cfg['away'][t]), str(w+1), ['THUE', 'THUL', 'THUN'], '*')) +
+                    grb.quicksum(games[t, h, w, s, n]
+                                 for t, h, w, s, n in seasons.select(list(cfg['home'][t]), t, str(w+1), ['THUE', 'THUL', 'THUN'], '*'))
+                    <= 1,
+                    name=cname)
+
+# Constraint-> 19 Week 17 games can only consist of games between division opponents.
+for a, h in cfg['opponents']: # Same divison zero.
+        cname = f'19_GamesBetweenDivisonTeam_{w}_{a}_{h}'
+        my_constr[cname] = nfl.addConstr(
+                grb.quicksum(games[a, h, w, s, n]
+                                for a, h, w, s, n in seasons.select(a, h, "17", '*', '*') if cfg['teams'][a][1] == cfg['teams'][h][1])
+                >= 1,
+                name=cname)
+
 # Constraint-> 20 No team playing Thursday night on the road should trave more than 1 time zone away.
 nfl.update()
 nfl.write('nfl.lp')

@@ -38,10 +38,10 @@ class DataService(object):
             home_map['BYE'] = home_teams # Add bye home team for all teams.
             return home_map
 
-    def get_team_list(self) -> set:
+    def get_team_list(self) -> dict:
         with DBSession(self.systemname, self.dbfile) as session:
-            teams = session.query(TeamData.TEAM).distinct()
-            return {item[0] for item in teams}
+            teams = session.query(TeamData.TEAM, TeamData.CONF, TeamData.DIV, TeamData.TIMEZONE)
+            return {item[0]: [item[1], item[2], item[3]] for item in teams}
 
     def get_network_list(self) -> list:
         with DBSession(self.systemname, self.dbfile) as session:
@@ -62,6 +62,11 @@ class DataService(object):
             GameVariables.NETWORK,
             GameVariables.QUAL_POINTS)
             return [(item[0],item[1],item[2], item[3], item[4], item[5]) for item in vars]
+
+    def get_opponents(self):
+        with DBSession(self.systemname, self.dbfile) as session:
+            data=session.query(Opponents.AWAY_TEAM, Opponents.HOME_TEAM)
+            return [(item[0], item[1]) for item in data]
 
     def add_records(self, objects:list) -> None:
         with DBSession(self.systemname, self.dbfile) as session:
