@@ -352,7 +352,8 @@ for a, h in cfg['opponents']: # Same divison zero.
         cname = f'19_GamesBetweenDivisonTeam_{w}_{a}_{h}'
         my_constr[cname] = nfl.addConstr(
                 grb.quicksum(games[a, h, w, s, n]
-                                for a, h, w, s, n in seasons.select(a, h, "17", '*', '*') if cfg['teams'][a][1] == cfg['teams'][h][1])
+                                for a, h, w, s, n in seasons.select(a, h, "17", '*', '*') 
+                             if cfg['teams'][a][1] == cfg['teams'][h][1] and cfg['teams'][a][0] == cfg['teams'][h][0])
                 >= 0,
                 name=cname)
 
