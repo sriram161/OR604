@@ -336,7 +336,7 @@ for t in cfg['teams']:
 # Constraint-> 18 No team coming off of a BYE can play Thursday night
 for t in cfg['teams']:
         cname = f'18_TeamByeCannotPlayThursdayNight_{t}'
-        for w in range(4, 17):
+        for w in range(4, 16):
                 my_constr[cname] = nfl.addConstr(
                     grb.quicksum(games[t, h, w, s, n]
                                  for t, h, w, s, n in seasons.select(t, 'BYE', str(w), '*', '*')) +
