@@ -336,7 +336,7 @@ for t in cfg['teams']:
 # Constraint-> 18 No team coming off of a BYE can play Thursday night
 for t in cfg['teams']:
         cname = f'18_TeamByeCannotPlayThursdayNight_{t}'
-        for w in range(4, 16):
+        for w in range(4, 13):
                 my_constr[cname] = nfl.addConstr(
                     grb.quicksum(games[t, h, w, s, n]
                                  for t, h, w, s, n in seasons.select(t, 'BYE', str(w), '*', '*')) +
@@ -358,6 +358,15 @@ for a, h in cfg['opponents']: # Same divison zero.
                 name=cname)
 
 # Constraint-> 20 No team playing Thursday night on the road should trave more than 1 time zone away.
+for t in cfg['teams']:
+        cname = f'20_ThuNOnRoad1TimeZone_{t}'
+        my_constr[cname] = nfl.addConstr(
+                grb.quicksum(games[a, h, w, s, n]
+                                for a, h, w, s, n in seasons.select(t, cfg['home'][t], '*', 'THUN', '*') 
+                             if abs(cfg['teams'][a][2] == cfg['teams'][h][2]) <= 1) 
+                >= 0,
+                name=cname)
+
 nfl.update()
 nfl.write('nfl.lp')
 
