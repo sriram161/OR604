@@ -40,7 +40,7 @@ print('Count of slots per week:', len(cfg['slots']))
 nfl = grb.Model()
 grb.Model()
 nfl.modelSense = grb.GRB.MAXIMIZE
-nfl.setParam('TimeLimit', 60)
+# nfl.setParam('TimeLimit', 60)
 
 # Indices
 seasons = []
@@ -373,17 +373,17 @@ nfl.write('nfl.lp')
 nfl.optimize()
 nfl.update()
 
-# print("shedule...")
-# for idx, item in enumerate(games.items()):
-#    if item[1].X != 0:
-#       print(item[0], item[1].X)
+print("schedule...!!!")
+for idx, item in enumerate(games.items()):
+   if item[1].X != 0:
+      print(item[0], item[1].X)
 
-# optimal_values = [Schedule(ROW_ID=idx, 
-#                   AWAY_TEAM=item[0][0], 
-#                   HOME_TEAM=item[0][1], 
-#                   WEEK=item[0][2],
-#                   SLOT=item[0][3],
-#                   NETWORK=item[0][4],
-#                   GAME_FLAG=item[1].X)
-#                   for idx, item in enumerate(games.items())]
-# server_obj.add_records(optimal_values)
+optimal_values = [Schedule(ROW_ID=idx, 
+                  AWAY_TEAM=item[0][0], 
+                  HOME_TEAM=item[0][1], 
+                  WEEK=item[0][2],
+                  SLOT=item[0][3],
+                  NETWORK=item[0][4],
+                  GAME_FLAG=item[1].X)
+                  for idx, item in enumerate(games.items())]
+server_obj.add_records(optimal_values)
