@@ -374,7 +374,7 @@ for t in cfg['teams']:
         for h in cfg['away'][t]:
                 for w in range(1, 18):
                         cname = f"link_{t}_{h}_{w}"
-                        link[a, h, w] = nfl.addVar(obj=1, vtype=grb.GRB.BINARY, name=cname)
+                        link[a, h, w] = nfl.addVar(obj=-1, vtype=grb.GRB.BINARY, name=cname)
 
 for t in cfg['teams']:
         for w in range(2, 18):
@@ -383,7 +383,7 @@ for t in cfg['teams']:
                         grb.quicksum(games[a, h, w, s, n]
                                         for a, h, w, s, n in seasons.select(t, cfg['home'][t], str(w), '*', '*')) +
                         grb.quicksum(games[a, h, w, s, n]
-                                        for a, h, w, s, n in seasons.select(cfg['home'][t], 'BYE', str(w-1), 'SUNB', 'BYE')) -
+                                        for a, h, w, s, n in seasons.select(cfg['home'][t], 'BYE', str(w-1), 'SUNB', 'BYE')) +
                         grb.quicksum(link[a, h, w] for h in cfg['home'][t])
                         <= 1,
                         name=cname)
@@ -396,9 +396,7 @@ for a, h in cfg['opponents']: # Same divison zero.
                 for w in range(1, 17):
                         my_constr[cname] = nfl.addConstr(
                                 grb.quicksum(games[a, h, w, s, n]
-                                                for a, h, w, s, n in seasons.select(a, h, str(w), '*', '*')) +
-                                grb.quicksum(games[a, h, w, s, n]
-                                                for a, h, w, s, n in seasons.select(a, h, str(w+1), '*', '*'))
+                                                for a, h, w, s, n in seasons.select(a, h,  [str(w+i) for i in range(0,2)], '*', '*'))
                                 <= 1,
                                 name=cname)
 
@@ -409,15 +407,51 @@ for a, h in cfg['opponents']: # Same divison zero.
                 for w in range(1, 16):
                         my_constr[cname] = nfl.addConstr(
                                 grb.quicksum(games[a, h, w, s, n]
-                                                for a, h, w, s, n in seasons.select(a, h, str(w), '*', '*')) +
-                                grb.quicksum(games[a, h, w, s, n]
-                                                for a, h, w, s, n in seasons.select(a, h, str(w+1), '*', '*')) +
-                                grb.quicksum(games[a, h, w, s, n]
-                                                for a, h, w, s, n in seasons.select(a, h, str(w+2), '*', '*'))
+                                                for a, h, w, s, n in seasons.select(a, h, [str(w+i) for i in range(0,3)], '*', '*')) 
                                 <= 1,
                                 name=cname)
 
 # Constraint-> 23 Teams should not play 3 consecutive home/away games between weeks 4 through 16.
+
+pen23_away = {}
+for t in cfg['teams']:
+    for w in range(4,17):
+        cName = f'PEN23_AwayWeek_{t}_{w}' 
+        pen23_away[t,w] = nfl.addVar(obj=-3, vtype=grb.GRB.BINARY, name=cName)
+
+pen23_home = {}
+for t in cfg['teams']:
+    for w in range(4,17):
+        cName = f'PEN23_HomeWeek_{t}_{w}'
+        pen23_home[t,w] = nfl.addVar(obj=-3, vtype=grb.GRB.BINARY, name=cName)
+
+
+for t in cfg['teams']:
+        cName = F'23_AwayHomePenCapacity_{t}'
+        my_constr[cname] = nfl.addConstr(
+                grb.quicksum(pen23_away[t, w]
+                                for w in range(4, 15)) +
+                grb.quicksum(pen23_home[t, w]
+                                for w in range(4, 15)) <=1, name=cname)
+
+for t in cfg['teams']:
+        for w in range(4, 15):
+                cname = f'23_3ConsecutiveAway_{t}_{w}'
+                my_constr[cname] = nfl.addConstr(
+                        grb.quicksum(games[a, h, w, s, n]
+                                        for a, h, w, s, n in seasons.select(t, cfg['home'][t], [str(w+i) for i in range(0,3)], '*', '*')) 
+                        <= 2 + pen23_away[t, w],
+                        name=cname)
+
+for t in cfg['teams']:
+        for w in range(4, 15):
+                cname = f'23_3ConsecutiveHome_{t}_{w}'
+                my_constr[cname] = nfl.addConstr(
+                        grb.quicksum(games[a, h, w, s, n]
+                                        for a, h, w, s, n in seasons.select(cfg['home'][t], t, [str(w+i) for i in range(0,3)], '*', '*'))
+                        <= 2 + pen23_home[t, w],
+                        name=cname)
+
 # Constraint-> 24 No team should play consecutive road games involving travel across more t han 1 time zone.
 # Constraint-> 25 No team should open the season with two away games.
 # Constraint-> 26 No team should end the season with two away games.
