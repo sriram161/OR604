@@ -403,6 +403,20 @@ for a, h in cfg['opponents']: # Same divison zero.
                                 name=cname)
 
 # b Gapped with a BYE.
+for a, h in cfg['opponents']: # Same divison zero.
+        cname = f'22b_GappedByBYE_{a}_{h}'
+        if cfg['teams'][a][1] == cfg['teams'][h][1]:
+                for w in range(1, 16):
+                        my_constr[cname] = nfl.addConstr(
+                                grb.quicksum(games[a, h, w, s, n]
+                                                for a, h, w, s, n in seasons.select(a, h, str(w), '*', '*')) +
+                                grb.quicksum(games[a, h, w, s, n]
+                                                for a, h, w, s, n in seasons.select(a, h, str(w+1), '*', '*')) +
+                                grb.quicksum(games[a, h, w, s, n]
+                                                for a, h, w, s, n in seasons.select(a, h, str(w+2), '*', '*'))
+                                <= 1,
+                                name=cname)
+
 # Constraint-> 23 Teams should not play 3 consecutive home/away games between weeks 4 through 16.
 # Constraint-> 24 No team should play consecutive road games involving travel across more t han 1 time zone.
 # Constraint-> 25 No team should open the season with two away games.
