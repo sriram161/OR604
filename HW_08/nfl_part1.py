@@ -130,7 +130,7 @@ for w in range(15, 17):
         w = str(w)
         my_constr[cname] = nfl.addConstr(
             (grb.quicksum(games[t, h, w, s, n]
-                          for t, h, w, s, n in seasons.select('*', '*', w, s, '*'))) == 2,
+                          for t, h, w, s, n in seasons.select('*', '*', w, s, '*'))) == 1,
             name=cname)
 
 # Constraint-> 8: Sunday double header games.
@@ -390,6 +390,18 @@ for t in cfg['teams']:
 
 # Constraint-> 22 Division opponents cannot paly each other.
 # a Back to back.
+for a, h in cfg['opponents']: # Same divison zero.
+        cname = f'22a_BackToBack_{a}_{h}'
+        if cfg['teams'][a][1] == cfg['teams'][h][1]:
+                for w in range(1, 17):
+                        my_constr[cname] = nfl.addConstr(
+                                grb.quicksum(games[a, h, w, s, n]
+                                                for a, h, w, s, n in seasons.select(a, h, str(w), '*', '*')) +
+                                grb.quicksum(games[a, h, w, s, n]
+                                                for a, h, w, s, n in seasons.select(a, h, str(w+1), '*', '*'))
+                                <= 1,
+                                name=cname)
+
 # b Gapped with a BYE.
 # Constraint-> 23 Teams should not play 3 consecutive home/away games between weeks 4 through 16.
 # Constraint-> 24 No team should play consecutive road games involving travel across more t han 1 time zone.
