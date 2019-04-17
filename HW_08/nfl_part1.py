@@ -454,11 +454,21 @@ for t in cfg['teams']:
                         name=cname)
 
 # Constraint-> 24 No team should play consecutive road games involving travel across more t han 1 time zone.
-# pen24 = {}
-# for t in cfg['teams']:
-#     for w in range(1, 17):
-#         cName = f'PEN24_Week_{t}_{w}' 
-#         pen23_away[t,w] = nfl.addVar(obj=-3, vtype=grb.GRB.BINARY, name=cName)
+pen24 = {}
+for t in cfg['teams']:
+    for w in range(1, 17):
+        cName = f'PEN24_Week_{t}_{w}' 
+        pen24[t, w] = nfl.addVar(obj= -1, vtype=grb.GRB.BINARY, name=cName)
+
+for t in cfg['teams']:
+    for w in range(1, 16):
+        constrName = f"24_NoConsecutiveRoadMoreThan1TimeZone_{t}_{w}"
+        my_constr[cname]= nfl.addConstr(
+                grb.quicksum(games[t, h, w, s, n] 
+                                      for t, h, w, s, n in seasons.select(t, '*', [str(w+i) for i in range(3)], '*', '*', '*') 
+                                        if h != 'BYE' and abs(cfg['teams'][t][2] - cfg['teams'][h][2]) >= 2) 
+                <= 1 + pen24[t, int(w)], 
+                name=cName)
 
 # Constraint-> 25 No team should open the season with two away games.
 pen25 = {}
@@ -505,26 +515,105 @@ for t in floridaTeams:
                 name=cName)
 
 # Constraint-> 28 CBS and FOX should not have fewer than 5 games than each on a sunday. if it does happen, it cna only happen once in the season for each network.
+pen28 = {}
+for n in ['CBS', 'FOX']:
+        for w in range(1, 18):
+                cName= f'PEN28_{n}_{w}'
+                pen28[n, w] = nfl.addVar(obj=-3, vtype=grb.GRB.BINARY, name=cName)
+        
+for n in ['CBS', 'FOX']:
+        for w in range(1, 18):
+                cName = f'28_CBSFOX5GamesSun_{n}_{w}'
+                my_constr[cname] = nfl.addConstr(
+                        grb.quicksum(games[a, h, w, s, n]
+                                        for a, h, w, s, n in seasons.select('*' , '*', str(w), ["SUNE", "SUND", "SUNL"], n)) +
+                        pen28[n, w] >=5,
+                        name=cName)
+
+for n in ['CBS', 'FOX']:
+        cName = f'28_FewerThan5Games_{n}'
+        my_constr[cname] = nfl.addConstr(
+                grb.quicksum(pen28[n, w]
+                                for w in range(1,18)) 
+                        <=1,
+                name=cName)
 # Constraint-> 29 CBS and FOX should not lose both games between divisional opponents for their assigned conference(FOX is assigned NFC, CBS is assigned AFC).
+pen29 = {}
+div_games = set()
+
+for a in cfg['teams']:
+    for h in cfg['home'][a]:
+        if cfg['teams'][a][0] == cfg['teams'][h][0] and cfg['teams'][a][1] == cfg['teams'][h][1]:
+            if (a, h) not in div_games and (h, a) not in div_games:
+                div_games.add((a, h))
+                pen29[a, h] = nfl.addVar(vtype = grb.GRB.BINARY,
+                                       obj = -3,
+                                       name = f"PEN29_{a}_{h}")
+
+for t1, t2 in div_games:
+    if cfg['teams'][t1][0] == 'NFC':
+        cName = f'29_NFC_FewerThan5Games_{t1}_{t2}'
+        my_constr[cName] = nfl.addConstr(grb.quicksum(games[t, h, w, s, n] for t, h, w, s, n in seasons.select(t1, t2, [str(i) for i in range(1, 18)], '*', 'FOX', '*')) +
+                                          grb.quicksum(games[a, t, w, s, n] for a, t, w, s, n in seasons.select(t2, t1, [str(i) for i in range(1, 18)], '*', 'FOX', '*'))
+                                          >= 1 - pen29[t1, t2], name = cName)
+    else:
+        cName = f'29_AFC_FewerThan5Games_{t1}_{t2}'
+        my_constr[cName] = nfl.addConstr(grb.quicksum(games[t, h, w, s, n] for t, h, w, s, n in seasons.select(t1, t2, [str(i) for i in range(1, 18)], '*', 'CBS', '*')) +
+                                          grb.quicksum(games[a, t, w, s, n] for a, t, w, s, n in seasons.select(t2, t1, [str(i) for i in range(1, 18)], '*', 'CBS', '*'))
+                                          >= 1 - pen29[t1, t2], name = cName)
+
+
 # Constraint-> 30 The searies between two divisional opponents should not end in the first half of the season(Weeks 1 through 9).
+pen30 = {}
+div_games = set()
+
+for a in cfg['teams']:
+    for h in cfg['home'][a]:
+        if cfg['teams'][a][0] == cfg['teams'][h][0] and cfg['teams'][a][1] == cfg['teams'][h][1]:
+            if (a, h) not in div_games and (h, a) not in div_games:
+                div_games.add((a, h))
+                pen30[a, h] = nfl.addVar(vtype =grb.GRB.BINARY,
+                                       obj = -4,
+                                       name = f"PEN30_{a}_{h}")
+for t1, t2 in div_games:
+    cName = f"30_DivisionMatchupNotEndsInThe1stHalf_{t1}_{t2}"
+    my_constr[cName] = nfl.addConstr(
+           grb.quicksum(games[t, h, w, s, n] for t, h, w, s, n in seasons.select(t1, t2, [str(i) for i in range(1, 10)], ['SUNE', 'SUNL', 'SUND'], '*')) +
+           grb.quicksum(games[a, t, w, s, n] for a, t, w, s, n in seasons.select(t2, t1, [str(i) for i in range(1, 10)], ['SUNE', 'SUNL', 'SUND'], '*'))
+                                      <= 1 + pen30[t1, t2], name = cName)
 # Constraint-> 31 Teams should not play on the road the week following a Monday night game.
+pen31 = {}
+for t in cfg['teams']:
+    for w in range(1, 17):
+        pen31[t, w] = nfl.addVar(vtype = grb.GRB.BINARY, 
+                             obj = -1,
+                             name = f"PEN31_{t}_{w}")
+
+for t in cfg['teams']:
+    for w in range(1, 17):
+        cName = f"31_NoRoadAfterMondayN_{t}_{w}"
+        my_constr[cName] = nfl.addConstr(grb.quicksum(games[a, h, w, s, n] for a, h, w, s, n in seasons.select(t, cfg['home'][t], str(w), 'MONN', '*')) +  
+                                          grb.quicksum(games[a, h, w, s, n] for a, h, w, s, n in seasons.select(cfg['away'][t], t, str(w), 'MONN', '*')) +
+                                          grb.quicksum(games[a, h, w, s, n] for a, h, w, s, n in seasons.select(t, cfg['home'][t], str(w+1), '*', '*'))
+                                          <= 1 + pen31[t, w], name = cName)
+
 nfl.update()
 nfl.write('nfl.lp')
 
 nfl.optimize()
 nfl.update()
 
-# print("schedule...!!!")
-# for idx, item in enumerate(games.items()):
-#    if item[1].X != 0:
-#       print(item[0], item[1].X)
+print("schedule...!!!")
+for idx, item in enumerate(games.items()):
+   if item[1].X != 0:
+      print(item[0], item[1].X)
 
-# optimal_values = [Schedule(ROW_ID=idx, 
-#                   AWAY_TEAM=item[0][0], 
-#                   HOME_TEAM=item[0][1], 
-#                   WEEK=item[0][2],
-#                   SLOT=item[0][3],
-#                   NETWORK=item[0][4],
-#                   GAME_FLAG=item[1].X)
-#                   for idx, item in enumerate(games.items())]
-# server_obj.add_records(optimal_values)
+optimal_values = [Schedule(ROW_ID=idx, 
+                  AWAY_TEAM=item[0][0], 
+                  HOME_TEAM=item[0][1], 
+                  WEEK=item[0][2],
+                  SLOT=item[0][3],
+                  NETWORK=item[0][4],
+                  GAME_FLAG=item[1].X)
+                  for idx, item in enumerate(games.items())]
+server_obj.add_records(optimal_values)
