@@ -1,4 +1,4 @@
-NOTE* Please download and unzip HW_06 folder and execute the command from inside 
+NOTE* Please download and unzip HW_08 folder and execute the command from inside 
 HW_08 folder.
 
 # Execution process:
