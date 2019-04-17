@@ -41,6 +41,7 @@ nfl = grb.Model()
 grb.Model()
 nfl.modelSense = grb.GRB.MAXIMIZE
 nfl.setParam('TimeLimit', 60)
+nfl.setParam('MIPfocus',1)
 
 # Indices
 seasons = []
@@ -448,19 +449,65 @@ for t in cfg['teams']:
                 cname = f'23_3ConsecutiveHome_{t}_{w}'
                 my_constr[cname] = nfl.addConstr(
                         grb.quicksum(games[a, h, w, s, n]
-                                        for a, h, w, s, n in seasons.select(cfg['home'][t], t, [str(w+i) for i in range(0,3)], '*', '*'))
+                                        for a, h, w, s, n in seasons.select(cfg['away'][t], t, [str(w+i) for i in range(0,3)], '*', '*'))
                         <= 2 + pen23_home[t, w],
                         name=cname)
 
 # Constraint-> 24 No team should play consecutive road games involving travel across more t han 1 time zone.
+# pen24 = {}
+# for t in cfg['teams']:
+#     for w in range(1, 17):
+#         cName = f'PEN24_Week_{t}_{w}' 
+#         pen23_away[t,w] = nfl.addVar(obj=-3, vtype=grb.GRB.BINARY, name=cName)
+
 # Constraint-> 25 No team should open the season with two away games.
+pen25 = {}
+for t in cfg['teams']:
+    cName= f'PEN25_{t}'
+    pen25[t] = nfl.addVar(obj=-3, vtype=grb.GRB.BINARY, name=cName)
+
+for t in cfg['teams']:
+        cName = f'25_NoTeamOpenseasonwithtwoAwayGames_{t}_{w}'
+        my_constr[cname] = nfl.addConstr(
+                grb.quicksum(games[a, h, w, s, n]
+                                for a, h, w, s, n in seasons.select(t ,  cfg['home'][t], [str(1), str(2)], '*', '*'))
+                <=1 + pen25[t],
+                name=cname)
+
 # Constraint-> 26 No team should end the season with two away games.
+pen26 = {}
+for t in  cfg['teams']:
+    cName= f'PEN26_{t}'
+    pen26[t] = nfl.addVar(obj=-3, vtype=grb.GRB.BINARY, name=cName)
+
+for t in cfg['teams']:
+        cName = f'26_NoTeamEndseasonwithtwoAwayGames_{t}_{w}'
+        my_constr[cname] = nfl.addConstr(
+                grb.quicksum(games[a, h, w, s, n]
+                        for a, h, w, s, n in seasons.select(t ,  cfg['home'][t], [str(16), str(17)], '*', '*'))
+                <=1 + pen26[t],
+                name=cname)
 # Constraint-> 27 Florida teams should not play Early home games in the month of SEPT.
+pen27 = {}
+floridaTeams = ['TB','JAC','MIA']
+for t in floridaTeams:
+    for w in range(1,5):
+        cName= f'PEN27_{t}_{w}'
+        pen27[t,w] = nfl.addVar(obj=-3, vtype=grb.GRB.BINARY, name=cName)
+     
+for t in floridaTeams:
+    for w in range(1,5):
+        cName = f'27_NoSeptEarlyHomeGamesforFlorida_{t}_{w}'
+        my_constr[cname] = nfl.addConstr(
+                grb.quicksum(games[a, h, w, s, n]
+                                for a, h, w, s, n in seasons.select(cfg['away'][t] , t, str(w), "SUNE", '*'))
+                ==0 + pen27[t,w],
+                name=cName)
+
 # Constraint-> 28 CBS and FOX should not have fewer than 5 games than each on a sunday. if it does happen, it cna only happen once in the season for each network.
 # Constraint-> 29 CBS and FOX should not lose both games between divisional opponents for their assigned conference(FOX is assigned NFC, CBS is assigned AFC).
 # Constraint-> 30 The searies between two divisional opponents should not end in the first half of the season(Weeks 1 through 9).
 # Constraint-> 31 Teams should not play on the road the week following a Monday night game.
-
 nfl.update()
 nfl.write('nfl.lp')
 
