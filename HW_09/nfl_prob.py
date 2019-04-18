@@ -58,9 +58,19 @@ while not STOP:
         if nfl.status == grb.GRB.INFEASIBLE:
             STOP = False
             var_status[v] = (0, 0)
-            free_vars[v].ub = 0
+            free_vars[v].ub = 0 # Record all upper bound changed to zero to csv.
         else:
             free_vars[v].lb = 0
         nfl.update()
+
+
+# write all variables to a csv file.
+# varible_name, lower_boud, upper_bound.
+import csv
+with open('mycsvfile.csv', 'w') as f:  
+    csv_dict = csv.DictWriter(f, ['var', 'lb', 'ub'])
+    csv_dict.writeheader()
+        for k, v in var_status.items():
+            csv_dict.writerow({'var': k, 'lb': v[0], 'ub':v[1]})
 
 nfl.save('nfl_probe.lp')
