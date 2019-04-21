@@ -13,64 +13,83 @@ for var in nfl_vars:
     if var.varName[:2] == 'GO':
         games[var.varName] = var
 
-# get prime time free vars
+#STEP->3 get prime time free vars.
 free_vars = {} # Free variabls can be 0 or 1.
-var_status = {}
+var_bounds = {}
 for var in nfl_vars:
     if var.varName[:2] == 'GO':
         temp = var.varName.split('_')
         if 'PRIME' in temp:
             free_vars[tuple(temp[1:])] = var
-            var_status[tuple(temp[1:])] = (var.LB, var.UB)
+            var_bounds[tuple(temp[1:])] = (var.LB, var.UB)
 
-# Remove lowerbond == upperbound from free_vars and var_status.
+# STEP->4 Find the  
+# Remove lowerbond == upperbound from free_vars and var_bounds.
 remove_keys = []
-for v in var_status:
-    if var_status[v][0] == var_status[v][1]: #upper == lower
+for v in var_bounds:
+    if var_bounds[v][0] == var_bounds[v][1]: #upper == lower
         if free_vars.get(v):
             free_vars.pop(v)
             remove_keys.append(v)
 
 for v in remove_keys:
-    var_status.pop(v)
+    var_bounds.pop(v)
+
+#STEP->5 Function to check hard or soft constraint.
+def is_hard_constr(row):
+    for r in range(row.size()):
+        if not row.getVar(r).VarName.startswith('GO'):
+            return False
+    return True
+
+def write_csv(var_bounds):
+    import csv
+    with open('mycsvfile.csv', 'w') as f:  
+        csv_dict = csv.DictWriter(f, ['away', 'home', 'day', 'slot', 'network', 'week', 'lb', 'ub'])
+        csv_dict.writeheader()
+        for k, v in var_bounds.items():
+            csv_dict.writerow({'away': k[0],'home':k[1], 'day':k[2], 'slot':k[3], 'network':k[4], 'week':k[5], 'lb': v[0], 'ub':v[1]})
 
 #STEP->3 load constaints.
-remove_cons_keys = []
 my_Constrs = nfl.getConstrs()
 for con in my_Constrs:
     if con.sense == '<' and con.RHS == 0:
-        # print(con.constrName, con.RHS)
-        remove_cons_keys.append(con.constrName)
-        row = nfl.getRow(con)
-        for r in range(row.size()): # Force them to zero
-            print(row.getVar(r))
-            row.getVar(r).lb == 0 # KO the variables to zero.
-            row.getVar(r).ub == 0 # KO the variables to zero.
+        row = nfl.getRow(con) # To find panelty variables.
+        if is_hard_constr(row):
+            for r in range(row.size()): # Force them to zero
+                var = row.getVar(r) 
+                var.lb == 0 # KO the variables to zero.
+                var.ub == 0 # KO the variables to zero.
+                if 'PRIME' in var.VarName:
+                    games[tuple(var.VarName.split('_')[1:])] = var
+                    var_bounds[tuple(var.VarName.split('_')[1:])] = (0, 0)
+nfl.update()
 
+from itertools import count
+epoch_counter = count(1)
 nfl.setParam('timelimit', 10)
+nfl.setParam('OutputFlag', 0)
 STOP = False
 while not STOP:
     STOP = True
+    var_counter = count(1)
     for v in free_vars:
         free_vars[v].lb = 1
         nfl.update()
         nfl.optimize()
         if nfl.status == grb.GRB.INFEASIBLE:
             STOP = False
-            var_status[v] = (0, 0)
+            print('probe iteration infeasible: ', next(var_counter), 'Total free vars: ', sum(v.ub for k, v in free_vars.items()))
+            var_bounds[v] = (0, 0)
             free_vars[v].ub = 0 # Record all upper bound changed to zero to csv.
         else:
+            print('probe iteration feasible: ', next(var_counter), 'Total free vars: ', sum(v.ub for k, v in free_vars.items()))
             free_vars[v].lb = 0
         nfl.update()
+    print('Probe epoch: ', next(epoch_counter), 'Total free vars: ', sum(v.ub for k, v in free_vars.items()))
+    write_csv(var_bounds)
+    nfl.write('nfl_probe.lp')
+    
 
-
-# write all variables to a csv file.
-# varible_name, lower_boud, upper_bound.
-import csv
-with open('mycsvfile.csv', 'w') as f:  
-    csv_dict = csv.DictWriter(f, ['var', 'lb', 'ub'])
-    csv_dict.writeheader()
-        for k, v in var_status.items():
-            csv_dict.writerow({'var': k, 'lb': v[0], 'ub':v[1]})
-
-nfl.save('nfl_probe.lp')
+write_csv(var_bounds)
+nfl.write('nfl_probe_final.lp')
