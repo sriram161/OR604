@@ -8,32 +8,43 @@ nfl = grb.read(filename)
 nfl_vars = nfl.getVars()
 
 #STEP->2 load game variablse to games dict.
-games = {} 
-for var in nfl_vars:
-    if var.varName[:2] == 'GO':
-        games[var.varName] = var
+def get_game_vars(nfl_vars):
+    games = {} 
+    for var in nfl_vars:
+        if var.varName[:2] == 'GO':
+            games[var.varName] = var
+    return games
+games = get_game_vars(nfl_vars)
 
 #STEP->3 get prime time free vars.
-free_vars = {} # Free variabls can be 0 or 1.
-var_bounds = {}
-for var in nfl_vars:
-    if var.varName[:2] == 'GO':
-        temp = var.varName.split('_')
-        if 'PRIME' in temp:
-            free_vars[tuple(temp[1:])] = var
-            var_bounds[tuple(temp[1:])] = (var.LB, var.UB)
+def get_bounds_vars(nfl_vars):
+    free_vars = {} # Free variabls can be 0 or 1.
+    var_bounds = {}
+    for var in nfl_vars:
+        if var.varName[:2] == 'GO':
+            temp = var.varName.split('_')
+            if 'PRIME' in temp:
+                free_vars[tuple(temp[1:])] = var
+                var_bounds[tuple(temp[1:])] = (var.LB, var.UB)
+    return var_bounds, free_vars
+
+var_bounds, free_vars = get_bounds_vars(nfl_vars)
 
 # STEP->4 Find the  
 # Remove lowerbond == upperbound from free_vars and var_bounds.
-remove_keys = []
-for v in var_bounds:
-    if var_bounds[v][0] == var_bounds[v][1]: #upper == lower
-        if free_vars.get(v):
-            free_vars.pop(v)
-            remove_keys.append(v)
+def clean_up(var_bounds, free_vars):
+    remove_keys = []
+    for v in var_bounds:
+        if var_bounds[v][0] == var_bounds[v][1]: #upper == lower
+            if free_vars.get(v):
+                free_vars.pop(v)
+                remove_keys.append(v)
 
-for v in remove_keys:
-    var_bounds.pop(v)
+    for v in remove_keys:
+        var_bounds.pop(v)
+    return var_bounds, free_vars
+
+var_bounds, free_vars = clean_up(var_bounds, free_vars)
 
 #STEP->5 Function to check hard or soft constraint.
 def is_hard_constr(row):
@@ -52,24 +63,32 @@ def write_csv(var_bounds):
 
 #STEP->3 load constaints.
 my_Constrs = nfl.getConstrs()
-for con in my_Constrs:
-    if con.sense == '<' and con.RHS == 0:
-        row = nfl.getRow(con) # To find panelty variables.
-        if is_hard_constr(row):
-            for r in range(row.size()): # Force them to zero
-                var = row.getVar(r) 
-                var.lb == 0 # KO the variables to zero.
-                var.ub == 0 # KO the variables to zero.
-                if 'PRIME' in var.VarName:
-                    games[tuple(var.VarName.split('_')[1:])] = var
-                    var_bounds[tuple(var.VarName.split('_')[1:])] = (0, 0)
+
+def set_constrain_vars_bounds(my_Constrs, games, var_bounds):
+    for con in my_Constrs:
+        if con.sense == '<' and con.RHS == 0:
+            row = nfl.getRow(con) # To find panelty variables.
+            if is_hard_constr(row):
+                for r in range(row.size()): # Force them to zero
+                    var = row.getVar(r) 
+                    var.lb == 0 # KO the variables to zero.
+                    var.ub == 0 # KO the variables to zero.
+                    if 'PRIME' in var.VarName:
+                        games[tuple(var.VarName.split('_')[1:])] = var
+                        var_bounds[tuple(var.VarName.split('_')[1:])] = (0, 0)
+    return games, var_bounds
+
+games, var_bounds = set_constrain_vars_bounds(my_Constrs, games, var_bounds)
 nfl.update()
 
 from itertools import count
 epoch_counter = count(1)
 nfl.setParam('timelimit', 10)
 nfl.setParam('OutputFlag', 0)
+# nfl.setParam('logtoconsole', 0)
+# nfl.setParam('threadlimit', 1)
 STOP = False
+nfl.write('nfl_probe.lp')
 while not STOP:
     STOP = True
     var_counter = count(1)
@@ -86,10 +105,21 @@ while not STOP:
             print('probe iteration feasible: ', next(var_counter), 'Total free vars: ', sum(v.ub for k, v in free_vars.items()))
             free_vars[v].lb = 0
         nfl.update()
+        # nfl.write('nfl_probe.lp')
+        # write_csv(var_bounds)
+    var_bounds, free_vars = clean_up(var_bounds, free_vars)
     print('Probe epoch: ', next(epoch_counter), 'Total free vars: ', sum(v.ub for k, v in free_vars.items()))
     write_csv(var_bounds)
     nfl.write('nfl_probe.lp')
     
+    nfl = grb.Model()
+    nfl = grb.read('nfl_probe.lp')
+    nfl_vars = nfl.getVars()
+    var_bounds, free_vars = get_bounds_vars(nfl_vars)
+    my_Constrs = nfl.getConstrs()
+    games, var_bounds = set_constrain_vars_bounds(my_Constrs, get_game_vars(nfl_vars), var_bounds)
+    nfl.setParam('timelimit', 10)
+    nfl.setParam('OutputFlag', 0)
 
 write_csv(var_bounds)
 nfl.write('nfl_probe_final.lp')
