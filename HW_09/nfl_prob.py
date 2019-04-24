@@ -101,6 +101,7 @@ while not STOP:
             print('probe iteration infeasible: ', next(var_counter), 'Total free vars: ', sum(v.ub for k, v in free_vars.items()))
             var_bounds[v] = (0, 0)
             free_vars[v].ub = 0 # Record all upper bound changed to zero to csv.
+            free_vars[v].lb = 0
         else:
             print('probe iteration feasible: ', next(var_counter), 'Total free vars: ', sum(v.ub for k, v in free_vars.items()))
             free_vars[v].lb = 0
