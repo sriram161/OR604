@@ -1,10 +1,12 @@
-import multiprocessing as mp 
+import multiprocessing as mp
 import logging
 import traceback
 import random
 import time
 import gurobipy as grb
 
+logger = mp.log_to_stderr()
+logger.setLevel(logging.INFO)
 def get_game_vars(nfl_vars) -> dict:
     games = {} 
     for var in nfl_vars:
@@ -16,7 +18,7 @@ def get_bounds_vars(nfl_vars) -> tuple:
     free_vars = {} # Free variabls can be 0 or 1.
     var_bounds = {}
     for var in nfl_vars:
-        if var.varName[:2] == 'GO':
+        if var.varName.startswith('GO'):
             temp = var.varName.split('_')
             if 'PRIME' in temp:
                 free_vars[tuple(temp[1:])] = var
@@ -70,13 +72,52 @@ def get_model(filename='nfl_probe.lp')-> object:
     nfl.setParam('OutputFlag', 0)
     return nfl
 
+def get_var_status_record(nfl, var)-> dict:
+    if nfl.status == grb.GRB.INFEASIBLE:
+        logger.info('probe iteration infeasible: {0}'.format('_'.join(var)))
+        return {'name': var, 'lb': 0, 'ub': 0}
+    else:
+        logger.info('probe iteration feasible: {0}'.format('_'.join(var)))
+        return {'name': var, 'lb': 0, 'ub': 1}
+
 def var_prob(in_q, out_q, v_shelf, filename):
     nfl = get_model(filename)
-    var_bounds, free_vars = get_bounds_vars(nfl_vars)
-    var = in_q.get()
+    var_bounds, free_vars = get_bounds_vars(nfl.getVars())
+    my_Constrs = nfl.getConstrs()
+    cache = set()
 
+    while True:
+        #STEP-1: Check managed shelf for var status updates which are not cached.
+        var_to_update = set(v_shelf.keys()) - cache
+        #STEP-2: Updated var bounds in models with the updated from shelf.
+        for name in var_to_update:
+            free_vars[name].lb = v_shelf[name].get('lb')
+            free_vars[name].ub = v_shelf[name].get('ub')
+            cache.add(name)
+        nfl.update()
+        #STEP-3: Get var from Queue set model bound to 1.
+        if in_q.empty():
+            return
+        var = in_q.get()
+        # STEP-4: Set and Upatee var bounds from queue to model.
+        free_vars[var].lb = 1
+        free_vars[var].ub = 1
+        nfl.update()
+        # STEP-5: optimize.
+        nfl.optimize()
+        # STEP-5: Report var status on the managed dict shelf.
+        record = get_var_status_record(nfl, var)
+        # Post the report on managed shelf.
+        v_shelf[record.get('name')] = record
+        # STEP-6: Cache the var name.
+        cache.add(record.get('name'))
 
-    return 
+def populate_input_queue(in_q, filename):
+    nfl = get_model(filename)
+    var_bounds, free_vars = get_bounds_vars(nfl.getVars())
+    for item in free_vars:
+        logger.debug(item)
+        in_q.put(item)
 
 def main(process_count = 4):
     from itertools import count
@@ -85,14 +126,20 @@ def main(process_count = 4):
     # STOP = False
     # while not STOP:
     #     STOP = False
+    filename = 'nfl_probe.lp'
     with mp.Manager() as resource_manager:
         output_queue = resource_manager.Queue()
         input_queue = resource_manager.Queue()
         var_shelf = resource_manager.dict()
-        # should I use synchronizing primitives????
-        # populate_input_queue(input_queue)
+        populate_input_queue(input_queue, filename)
 
-        tasks = [mp.Process(target=var_prob, args=(input_queue, output_queue, var_shelf, 'nfl_probe.lp')) for _ in range(process_count)]
+        tasks = [mp.Process(target=var_prob, args=(input_queue, output_queue, var_shelf, filename)) for _ in range(process_count)]
+
+        for task in tasks:
+            task.start()
+        
+        for task in tasks:
+            task.join()
 
 
 if __name__ == '__main__':
