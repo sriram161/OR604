@@ -97,6 +97,7 @@ def var_prob(in_q, out_q, v_shelf, filename):
         nfl.update()
         #STEP-3: Get var from Queue set model bound to 1.
         if in_q.empty():
+            nfl.write('nfl_probe_{0}.lp'.format(mp.current_process().name))
             return
         var = in_q.get()
         # STEP-4: Set and Upatee var bounds from queue to model.
@@ -107,10 +108,13 @@ def var_prob(in_q, out_q, v_shelf, filename):
         nfl.optimize()
         # STEP-5: Report var status on the managed dict shelf.
         record = get_var_status_record(nfl, var)
+        free_vars[var].lb = record.get('lb')
+        free_vars[var].ub = record.get('ub')
         # Post the report on managed shelf.
         v_shelf[record.get('name')] = record
         # STEP-6: Cache the var name.
         cache.add(record.get('name'))
+        nfl.update()
 
 def populate_input_queue(in_q, filename):
     nfl = get_model(filename)
