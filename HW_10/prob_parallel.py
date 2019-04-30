@@ -51,7 +51,8 @@ def clean_up(var_bounds, free_vars) -> tuple:
         var_bounds.pop(v)
     return var_bounds, free_vars
 
-def set_constrain_vars_bounds(my_Constrs, games, var_bounds) -> tuple:
+def set_constrain_vars_bounds(nfl, my_Constrs, var_bounds) -> tuple:
+    games = dict()
     for con in my_Constrs:
         if con.sense == '<' and con.RHS == 0:
             row = nfl.getRow(con) # To find panelty variables.
@@ -63,7 +64,7 @@ def set_constrain_vars_bounds(my_Constrs, games, var_bounds) -> tuple:
                     if 'PRIME' in var.VarName:
                         games[tuple(var.VarName.split('_')[1:])] = var
                         var_bounds[tuple(var.VarName.split('_')[1:])] = (0, 0)
-    return games, var_bounds
+    return games , var_bounds
 
 def get_model(filename='nfl_probe.lp')-> object:
     nfl = grb.Model()
@@ -80,10 +81,10 @@ def get_var_status_record(nfl, var)-> dict:
         logger.info('probe iteration feasible: {0}'.format('_'.join(var)))
         return {'name': var, 'lb': 0, 'ub': 1}
 
-def var_prob(in_q, out_q, v_shelf, filename):
+def var_prob(in_q, v_shelf, filename):
     nfl = get_model(filename)
-    var_bounds, free_vars = get_bounds_vars(nfl.getVars())
-    my_Constrs = nfl.getConstrs()
+    free_vars = get_bounds_vars(nfl.getVars())[1]
+    # my_Constrs = nfl.getConstrs()
     cache = set()
 
     while True:
@@ -116,34 +117,37 @@ def var_prob(in_q, out_q, v_shelf, filename):
         cache.add(record.get('name'))
         nfl.update()
 
-def populate_input_queue(in_q, filename):
+def populate_input_queue(in_q, filename, var_shelf):
     nfl = get_model(filename)
+    my_Constrs = nfl.getConstrs()
+    games = get_game_vars(nfl.getVars())
     var_bounds, free_vars = get_bounds_vars(nfl.getVars())
+    games, var_bounds = set_constrain_vars_bounds(nfl, my_Constrs, var_bounds)
+    for game in games:
+        lb, ub = var_bounds[game]
+        var_shelf[game] = {'name': game, 'lb': lb, 'ub': ub}
     for item in free_vars:
-        logger.debug(item)
+        if games.get(item):
+            continue
         in_q.put(item)
 
 def main(process_count = 4):
-    from itertools import count
-    epoch_counter = count(1)
-    #nfl.write('nfl_probe.lp')
-    # STOP = False
-    # while not STOP:
-    #     STOP = False
     filename = 'nfl_probe.lp'
     with mp.Manager() as resource_manager:
-        output_queue = resource_manager.Queue()
         input_queue = resource_manager.Queue()
         var_shelf = resource_manager.dict()
-        populate_input_queue(input_queue, filename)
+        populate_input_queue(input_queue, filename, var_shelf)
 
-        tasks = [mp.Process(target=var_prob, args=(input_queue, output_queue, var_shelf, filename)) for _ in range(process_count)]
+        tasks = [mp.Process(target=var_prob, args=(input_queue, var_shelf, filename)) for _ in range(process_count)]
 
         for task in tasks:
             task.start()
         
         for task in tasks:
             task.join()
+
+        for task in tasks:
+            task.terminate()
 
 
 if __name__ == '__main__':
