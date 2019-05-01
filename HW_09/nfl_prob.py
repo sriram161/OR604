@@ -55,7 +55,7 @@ def is_hard_constr(row):
 
 def write_csv(var_bounds):
     import csv
-    with open('mycsvfile.csv', 'w') as f:  
+    with open('mycsvfile.csv', 'w', newline='') as f:  
         csv_dict = csv.DictWriter(f, ['away', 'home', 'day', 'slot', 'network', 'week', 'lb', 'ub'])
         csv_dict.writeheader()
         for k, v in var_bounds.items():
