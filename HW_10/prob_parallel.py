@@ -4,6 +4,7 @@ import traceback
 import random
 import time
 import gurobipy as grb
+from itertools import count
 
 logger = mp.log_to_stderr()
 logger.setLevel(logging.INFO)
@@ -31,10 +32,10 @@ def is_hard_constr(row) -> bool:
             return False
     return True
 
-def write_csv(var_bounds) -> None:
+def write_csv(var_bounds, filename) -> None:
     import csv
-    with open('mycsvfile.csv', 'w') as f:  
-        csv_dict = csv.DictWriter(f, ['away', 'home', 'day', 'slot', 'network', 'week', 'lb', 'ub'])
+    with open(filename, 'w',  newline='') as f:  
+        csv_dict = csv.DictWriter(f, fieldnames=['away', 'home', 'day', 'slot', 'network', 'week', 'lb', 'ub'])
         csv_dict.writeheader()
         for k, v in var_bounds.items():
             csv_dict.writerow({'away': k[0],'home':k[1], 'day':k[2], 'slot':k[3], 'network':k[4], 'week':k[5], 'lb': v[0], 'ub':v[1]})
@@ -73,18 +74,19 @@ def get_model(filename='nfl_probe.lp')-> object:
     nfl.setParam('OutputFlag', 0)
     return nfl
 
-def get_var_status_record(nfl, var)-> dict:
+def get_var_status_record(nfl, var, var_count)-> dict:
+    count_ = next(var_count)
     if nfl.status == grb.GRB.INFEASIBLE:
-        logger.info('probe iteration infeasible: {0}'.format('_'.join(var)))
-        return {'name': var, 'lb': 0, 'ub': 0}
+        logger.info('var_count: {1} probe iteration infeasible: {0}'.format('_'.join(var), count_))
+        return {'name': var, 'lb': 0, 'ub': 0, 'run_flag': True}
     else:
-        logger.info('probe iteration feasible: {0}'.format('_'.join(var)))
-        return {'name': var, 'lb': 0, 'ub': 1}
+        logger.info('var_count: {1} probe iteration feasible: {0}'.format('_'.join(var), count_))
+        return {'name': var, 'lb': 0, 'ub': 1, 'run_flag': False}
 
 def var_prob(in_q, v_shelf, filename):
+    var_count = count(1)
     nfl = get_model(filename)
     free_vars = get_bounds_vars(nfl.getVars())[1]
-    # my_Constrs = nfl.getConstrs()
     cache = set()
 
     while True:
@@ -98,7 +100,6 @@ def var_prob(in_q, v_shelf, filename):
         nfl.update()
         #STEP-3: Get var from Queue set model bound to 1.
         if in_q.empty():
-            nfl.write('nfl_probe_{0}.lp'.format(mp.current_process().name))
             return
         var = in_q.get()
         # STEP-4: Set and Upatee var bounds from queue to model.
@@ -108,7 +109,7 @@ def var_prob(in_q, v_shelf, filename):
         # STEP-5: optimize.
         nfl.optimize()
         # STEP-5: Report var status on the managed dict shelf.
-        record = get_var_status_record(nfl, var)
+        record = get_var_status_record(nfl, var, var_count)
         free_vars[var].lb = record.get('lb')
         free_vars[var].ub = record.get('ub')
         # Post the report on managed shelf.
@@ -125,30 +126,66 @@ def populate_input_queue(in_q, filename, var_shelf):
     games, var_bounds = set_constrain_vars_bounds(nfl, my_Constrs, var_bounds)
     for game in games:
         lb, ub = var_bounds[game]
-        var_shelf[game] = {'name': game, 'lb': lb, 'ub': ub}
+        var_shelf[game] = {'name': game, 'lb': lb, 'ub': ub, 'run_flag': False}
     for item in free_vars:
         if games.get(item):
             continue
         in_q.put(item)
 
+def update_shelf_to_model(var_shelf, free_vars):
+    for var_key, item in var_shelf.items():
+        if free_vars.get(var_key):
+            free_vars[var_key].lb = item.get('lb')
+            free_vars[var_key].ub = item.get('ub')
+
 def main(process_count = 4):
     filename = 'nfl_probe.lp'
+    epoch_count = count(1)
+    run_flag = True
     with mp.Manager() as resource_manager:
-        input_queue = resource_manager.Queue()
-        var_shelf = resource_manager.dict()
-        populate_input_queue(input_queue, filename, var_shelf)
+        while(run_flag):
+            input_queue = resource_manager.Queue()
+            var_shelf = resource_manager.dict()
+            populate_input_queue(input_queue, filename, var_shelf)
 
-        tasks = [mp.Process(target=var_prob, args=(input_queue, var_shelf, filename)) for _ in range(process_count)]
+            tasks = [mp.Process(target=var_prob, args=(input_queue, var_shelf, filename)) for _ in range(process_count)]
 
-        for task in tasks:
-            task.start()
-        
-        for task in tasks:
-            task.join()
+            for task in tasks:
+                task.start()
+            
+            for task in tasks:
+                task.join()
 
-        for task in tasks:
-            task.terminate()
+            for task in tasks:
+                task.terminate()
 
+            # Write lp file.
+            nfl = grb.Model()
+            nfl = grb.read(filename)
+            nfl_vars = nfl.getVars()
+            my_Constrs = nfl.getConstrs()
+            var_bounds, free_vars = get_bounds_vars(nfl_vars)
+            update_shelf_to_model(var_shelf, free_vars)
+            nfl.update()
+            
+            games, var_bounds = set_constrain_vars_bounds(nfl, my_Constrs, var_bounds)
+            nfl.update()
+
+            # Write csv file.
+            write_csv(var_bounds, filename='nfl_probe_temp_vars.csv')
+            
+            # Write lp file.
+            filename='nfl_probe_temp.lp'
+            nfl.write(filename)
+
+            # loop with run flag.
+            infeasible_var_count = sum(1 for _ in var_shelf.values() if _.get('run_flag'))
+            if infeasible_var_count:
+                logger.info('Dr.C you are a great teacher! {1} variables infeasbile, I am going for a spin: {0} count'.format(next(epoch_count), infeasible_var_count))
+                run_flag = True
+            else:
+                logger.info('Task Completed!!!')
+                run_flag = False
 
 if __name__ == '__main__':
     random.seed(1234)
