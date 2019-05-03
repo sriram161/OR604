@@ -1,0 +1,12 @@
+create two instances of windows servers
+start the two
+Select one as the master and tag it
+Select the other to be the servant and tag it
+Add the All traffic for the security group 
+
+Create the folder NFL, with scripts, outputs, and model files as subdirectories
+Share the folder with full priveledges to everyone
+
+Connect to the second server
+map the network drive test the drive
+
