@@ -91,6 +91,8 @@ def var_prob(in_q, v_shelf, filename):
 
     while True:
         #STEP-1: Check managed shelf for var status updates which are not cached.
+        infeasible_var_count = sum(1 for _ in v_shelf.values() if _.get('run_flag'))
+        logger.info('Total infeasible vars in shelf: {0}'.format(infeasible_var_count))
         var_to_update = set(v_shelf.keys()) - cache
         #STEP-2: Updated var bounds in models with the updated from shelf.
         for name in var_to_update:
@@ -168,7 +170,7 @@ def main(process_count = 4):
             update_shelf_to_model(var_shelf, free_vars)
             nfl.update()
             
-            games, var_bounds = set_constrain_vars_bounds(nfl, my_Constrs, var_bounds)
+            # games, var_bounds = set_constrain_vars_bounds(nfl, my_Constrs, var_bounds)
             nfl.update()
 
             # Write csv file.
