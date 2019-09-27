@@ -10,6 +10,21 @@ Welcome to OR-604's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   CLS_3
+   HW_00
+   HW_01
+   HW_02
+   HW_03
+   HW_04
+   HW_05
+   HW_06
+   HW_07
+   HW_08
+   HW_09
+   HW_09
+   HW_10
+   HW_11
+
 
 
 Indices and tables
