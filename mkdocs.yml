@@ -1,0 +1,17 @@
+site_name: OR604 Leearning
+theme: readthedocs
+nav: 
+    - Home: index.md
+    - HW_00: HW_00.md
+    - HW_01: HW_01.md
+    - HW_02: HW_02.md
+    - HW_03: HW_03.md
+    - HW_04: HW_04.md
+    - HW_05: HW_05.md
+    - HW_06: HW_06.md
+    - HW_07: HW_07.md
+    - HW_08: HW_08.md
+    - HW_09: HW_09.md
+    - HW_10: HW_10.md 
+    - HW_11: HW_11.md
+    
