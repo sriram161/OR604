@@ -9,7 +9,8 @@ This course is intensive in practical learning of linear optimization problems. 
 6. Sqlite3.
 
 what is expected out of each assignment is provided in this manual.
-*_ **[Documentation]** _*(https://sriram161.github.io/OR604/)
+
+[*_ **Documentation** _*](https://sriram161.github.io/OR604/)
 
 #### Thank you
 Thank you for taking time to learn. I hope this helps.
