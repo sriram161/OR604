@@ -5,6 +5,9 @@ from app.db.settings import get_base
 base=get_base()
 
 class Trip(base):
+    """ Trip table model definition. Which is used as schema to reflect records on to the 
+    database table.
+    """
     __tablename__ = 'trip'
     ROW_ID = Column(BigInteger, primary_key=True)
     TRIP_DURATION = Column(BigInteger, nullable=False)

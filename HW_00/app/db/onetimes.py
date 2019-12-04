@@ -10,15 +10,19 @@ from app.db.context import DBSession
 from itertools import count
 
 def create_tables(systemname, dbfile):
+    """ Creates Location and Trip tables on the database. 
+    """
     base = get_base()
     sqlite_engine = DbFactory.get_db_engine(systemname, 
                                         dbfile).get_database()
-    Location.__table__.create(sqlite_engine, checkfirst=True)
-    Trip.__table__.create(sqlite_engine, checkfirst=True)
+    Location.__table__.create(sqlite_engine, checkfirst=True) # Location table creation.
+    Trip.__table__.create(sqlite_engine, checkfirst=True) # Trip table creation.
     sqlite_engine.dispose()
 
 
 def load_location_table(data_path, location_file, systemname, dbfile):
+    """ Loades Location table directoly from the zip as chunks into the sqlite database.
+    """
     with DBSession(systemname, dbfile) as session, codecs.open(data_path + location_file, 'r',
                                                                encoding='ascii', errors='ignore') as f_handle:
         reader = csv.DictReader(f_handle)
@@ -27,6 +31,8 @@ def load_location_table(data_path, location_file, systemname, dbfile):
         print("File_loaded...! {}".format(location_file))
 
 def load_trip_table(data_path, zip_file, systemname, dbfile):
+    """ Loades Trip table directoly from the zip as chunks into the sqlite database.
+    """
     with zipfile.ZipFile(data_path + zip_file) as zipf:
         row_id = count(1, 1)
         file_count = 0

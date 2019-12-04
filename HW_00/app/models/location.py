@@ -5,6 +5,9 @@ from app.db.settings import get_base
 base = get_base()
 
 class Location(base):
+    """ Location table model definition. Which is used as schema to reflect records on to the 
+    database table.
+    """
     __tablename__ = 'location'
     OBJECTID= Column(String(12), nullable=False)
     ID = Column(Integer, primary_key=True)

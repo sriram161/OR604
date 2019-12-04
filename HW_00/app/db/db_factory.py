@@ -3,11 +3,15 @@ from app.db.db_interface import Database
 from app.db.sqlite_db import SqliteDbEngine
 
 class DbFactory(object):
+    """ Singleton to manages database engines.
+    """
     singletons = defaultdict()
     databases = {class_.__name__: class_ for class_ in Database.__subclasses__()}
 
     @classmethod
     def get_db_engine(cls, systemname, dbfile, **kargs):
+    """ Database getter for the system from singleton repository.
+    """
       if cls.singletons.get(systemname):
           return cls.singletons.get(systemname)
       print(cls.databases)
