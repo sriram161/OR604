@@ -1,4 +1,20 @@
-import gurobipy as grb 
+""" Integer programming problem to minimizie the cost to produces a 
+a set of drink kegs to meet the demand.
+
+Decision variables:
+---------------------
+Number of kags of brew geneate for each blend.
+
+Given parameters:
+--------------------
+brewery 
+Distriution 
+distances
+
+"""
+import gurobipy as grb
+
+# Gurobi Model preparation.
 char_brew = grb.Model()
 char_brew.modelSense = grb.GRB.MINIMIZE
 char_brew.update()
@@ -12,7 +28,7 @@ cost = {b: }
 demand = {d: }
 supply = {b: }
 
-# Variables
+# Decision Variables.
 kags = {}
 for b in brewery:
     for d in distribution:
